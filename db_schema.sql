@@ -1,0 +1,27 @@
+CREATE TABLE aulas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  modalidade VARCHAR(30) NOT NULL,
+  data DATE NOT NULL,
+  horario TIME NOT NULL,
+  vagas_totais INTEGER NOT NULL,
+  plano_aula TEXT NOT NULL,
+  equipamentos_necessarios TEXT NOT NULL
+);
+
+CREATE TABLE alunos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome VARCHAR(120) NOT NULL,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  is_admin BOOLEAN NOT NULL DEFAULT 0
+);
+
+CREATE TABLE checkins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  aluno_id INTEGER NOT NULL,
+  aula_id INTEGER NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(aluno_id) REFERENCES alunos(id),
+  FOREIGN KEY(aula_id) REFERENCES aulas(id),
+  UNIQUE(aluno_id, aula_id)
+);

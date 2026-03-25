@@ -1,0 +1,171 @@
+:root {
+  --brand-orange: #ef7b2a;
+  --brand-blue: #1f4f7a;
+  --text-light: #f8fafc;
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background: #04070d;
+}
+
+.brand-title {
+  letter-spacing: 0.01em;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.video-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.btn-orange {
+  background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 24px rgba(224, 100, 26, 0.35);
+}
+
+.podium-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.podium-card {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.podium-card--first {
+  border-color: rgba(250, 204, 21, 0.88);
+  background: linear-gradient(160deg, rgba(250, 204, 21, 0.18), rgba(15, 23, 42, 0.52));
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.34) inset, 0 0 22px rgba(250, 204, 21, 0.32);
+  animation: medalPulseGold 1.85s ease-in-out infinite;
+}
+
+.podium-card--second {
+  border-color: rgba(203, 213, 225, 0.85);
+  background: linear-gradient(160deg, rgba(148, 163, 184, 0.17), rgba(15, 23, 42, 0.52));
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3) inset, 0 0 16px rgba(148, 163, 184, 0.22);
+  animation: medalPulseSilver 2.2s ease-in-out infinite;
+}
+
+.podium-card--third {
+  border-color: rgba(251, 146, 60, 0.78);
+  background: linear-gradient(160deg, rgba(251, 146, 60, 0.17), rgba(15, 23, 42, 0.52));
+  box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.28) inset, 0 0 14px rgba(251, 146, 60, 0.2);
+  animation: medalPulseBronze 2.45s ease-in-out infinite;
+}
+
+.podium-card--first .podium-place {
+  background: rgba(250, 204, 21, 0.25);
+  color: #fff7cc;
+}
+
+.podium-card--second .podium-place {
+  background: rgba(203, 213, 225, 0.22);
+  color: #e2e8f0;
+}
+
+.podium-card--third .podium-place {
+  background: rgba(251, 146, 60, 0.23);
+  color: #ffedd5;
+}
+
+.podium-place {
+  width: fit-content;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.65rem;
+  margin-bottom: 0.55rem;
+}
+
+@keyframes medalPulseGold {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.34) inset, 0 0 14px rgba(250, 204, 21, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.44) inset, 0 0 30px rgba(250, 204, 21, 0.42);
+  }
+}
+
+@keyframes medalPulseSilver {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3) inset, 0 0 10px rgba(148, 163, 184, 0.16);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.4) inset, 0 0 22px rgba(148, 163, 184, 0.3);
+  }
+}
+
+@keyframes medalPulseBronze {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.28) inset, 0 0 9px rgba(251, 146, 60, 0.14);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.35) inset, 0 0 20px rgba(251, 146, 60, 0.26);
+  }
+}
+
+@media (min-width: 768px) {
+  .podium-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .podium-card--first {
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .video-overlay {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podium-card--first,
+  .podium-card--second,
+  .podium-card--third {
+    animation: none;
+  }
+}

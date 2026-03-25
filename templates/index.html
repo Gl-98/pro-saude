@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pro Saúde - Gestão de Treinos</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='splash-screen.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --brand-orange: #ef7b2a;
+      --brand-blue: #1f4f7a;
+      --text-light: #f8fafc;
+      --input-bg: rgba(0, 0, 0, 0.2);
+      --input-border: rgba(255, 255, 255, 0.2);
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #04070d;
+    }
+
+    .brand-title {
+      letter-spacing: 0.01em;
+      text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .input-premium {
+      width: 100%;
+      border-radius: 0.9rem;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: #ffffff;
+      padding: 0.72rem 0.88rem;
+      outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .input-premium::placeholder {
+      color: rgba(226, 232, 240, 0.72);
+    }
+
+    .input-premium:focus {
+      border-color: rgba(76, 154, 255, 0.95);
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18), 0 0 22px rgba(66, 133, 244, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .login-btn {
+      background: linear-gradient(125deg, #304860 0%, #5f7690 45%, #a0b3c7 100%);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .login-btn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.05);
+    }
+
+    .register-btn {
+      background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 24px rgba(224, 100, 26, 0.35);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .register-btn:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.08) brightness(1.02);
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.7s ease forwards;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    .fade-in-up-delay {
+      animation-delay: 120ms;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .video-overlay {
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-[color:var(--text-light)]">
+  {% include '_splash_screen.html' %}
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="https://videos.pexels.com/video-files/6216964/6216964-hd_1920_1080_30fps.mp4" type="video/mp4" />
+    <source src="https://videos.pexels.com/video-files/6217331/6217331-hd_1080_1920_30fps.mp4" type="video/mp4" />
+  </video>
+  <div class="video-overlay" aria-hidden="true"></div>
+
+  <main class="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10">
+    <div id="toastContainer" class="pointer-events-none fixed right-2 top-2 z-50 space-y-2 sm:right-4 sm:top-4"></div>
+
+    <header class="glass-card mb-8 overflow-hidden rounded-3xl p-4 sm:p-5 md:mb-10 md:p-6">
+      <div class="pointer-events-none absolute -mt-10 ml-[-120px] h-44 w-44 rounded-full bg-orange-300/20 blur-2xl"></div>
+      <div class="flex flex-wrap items-start justify-between gap-3 sm:items-center sm:gap-4">
+        <div class="flex min-w-0 items-start gap-3 sm:items-center">
+          <div class="rounded-2xl bg-white/85 p-2 shadow-inner ring-1 ring-white/80">
+            <img
+              src="{{ url_for('static', filename='img/logo-pro-saude.png') }}"
+              alt="Logo Pro Saude"
+              class="h-16 w-auto rounded-lg object-contain"
+              onerror="handleLogoError(this)"
+            />
+            <div class="hidden rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-800">Logo nao encontrada em static/img/logo-pro-saude.png</div>
+          </div>
+          <div class="min-w-0">
+            <h1 class="brand-title text-3xl font-extrabold leading-none sm:text-4xl md:text-5xl">Pro Saúde</h1>
+            <p class="mt-1 text-sm font-medium text-slate-100/90">Gestão de treinos: Vôlei, Natação e Funcional</p>
+          </div>
+        </div>
+        {% if user %}
+          <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
+            <a href="{{ url_for('ranking') }}" class="rounded-xl bg-amber-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Ranking</a>
+            {% if user.is_admin %}
+              <a href="{{ url_for('admin') }}" class="rounded-xl bg-[color:var(--brand-blue)] px-3 py-2 text-sm font-semibold text-white shadow">Painel Admin</a>
+            {% endif %}
+            <form method="post" action="{{ url_for('logout') }}">
+              <button class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold">Sair</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="mb-5 space-y-2">
+          {% for category, message in messages %}
+            <div class="glass-card rounded-lg px-4 py-3 text-sm font-medium {% if category == 'error' %}text-rose-100{% else %}text-emerald-100{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    {% if not user %}
+      <section class="grid gap-6 md:grid-cols-2 md:gap-10">
+        <form action="{{ url_for('login') }}" method="post" class="glass-card fade-in-up rounded-3xl p-6 md:p-7">
+          <h2 class="mb-5 text-2xl font-bold text-white sm:text-3xl">Entrar</h2>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Email</label>
+          <input type="email" name="email" required class="input-premium mb-4" placeholder="seuemail@dominio.com" />
+          <label class="mb-2 block text-sm font-medium text-slate-100">Senha</label>
+          <input type="password" name="senha" required class="input-premium mb-5" placeholder="Digite sua senha" />
+          <button class="login-btn w-full rounded-xl px-4 py-2.5 font-bold text-white shadow">Fazer login</button>
+          <div class="mt-4 text-center">
+            <button type="button" onclick="abrirModalSenha()" class="text-sm text-orange-300 hover:text-orange-200 font-medium underline">Esqueceu a senha?</button>
+          </div>
+        </form>
+
+        <form action="{{ url_for('register') }}" method="post" class="glass-card fade-in-up fade-in-up-delay rounded-3xl p-6 md:p-7">
+          <h2 class="mb-5 text-2xl font-bold text-white sm:text-3xl">Criar conta</h2>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Nome</label>
+          <input type="text" name="nome" required class="input-premium mb-4" placeholder="Seu nome completo" />
+          <label class="mb-2 block text-sm font-medium text-slate-100">Email</label>
+          <input type="email" name="email" required class="input-premium mb-4" placeholder="seuemail@dominio.com" />
+          <label class="mb-2 block text-sm font-medium text-slate-100">Senha</label>
+          <input type="password" name="senha" required class="input-premium mb-5" placeholder="Crie uma senha segura" />
+          <button class="register-btn w-full rounded-xl px-4 py-2.5 font-bold text-white">Cadastrar</button>
+        </form>
+      </section>
+
+      <!-- Modal Esqueceu Senha -->
+      <div id="modalSenha" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3">
+        <div class="absolute inset-0 bg-black/50" onclick="fecharModalSenha()"></div>
+        <form action="{{ url_for('forgot_password') }}" method="post" class="glass-card relative rounded-3xl p-6 md:p-7 w-full max-w-md">
+          <h3 class="mb-4 text-2xl font-bold text-white">Recuperar Senha</h3>
+          <p class="mb-4 text-sm text-slate-200">Digite seu email cadastrado para solicitar a redefinição de senha. O administrador analisará seu pedido.</p>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Email cadastrado</label>
+          <input type="email" name="email" required class="input-premium mb-5" placeholder="seuemail@dominio.com" />
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <button type="button" onclick="fecharModalSenha()" class="flex-1 rounded-xl border border-slate-400 px-4 py-2.5 font-bold text-white">Cancelar</button>
+            <button type="submit" class="login-btn flex-1 rounded-xl px-4 py-2.5 font-bold text-white shadow">Solicitar</button>
+          </div>
+        </form>
+      </div>
+    {% else %}
+      <section class="glass-card mb-7 rounded-3xl p-5">
+        <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+          <p class="text-sm text-slate-100">Bem-vindo(a), <span class="font-bold text-white">{{ user.nome }}</span>. Escolha seu horário e confirme sua presença.</p>
+          <form method="post" action="{{ url_for('logout') }}">
+            <button class="rounded-xl bg-rose-600/80 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600">Sair</button>
+          </form>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="brand-title mb-4 text-2xl font-bold text-white sm:text-3xl">Feed de horarios</h2>
+        <div id="feedAulas" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <article class="glass-card rounded-3xl p-4">
+            <p class="text-sm text-slate-100">Carregando aulas...</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="minhaAulaBox" class="glass-card mt-9 hidden rounded-3xl p-6">
+        <h3 class="brand-title mb-1 text-2xl font-black text-white sm:text-3xl">Minha Aula de Hoje</h3>
+        <p id="metaAula" class="mb-5 text-sm text-slate-200"></p>
+        <div class="grid gap-4 md:grid-cols-2">
+          <article class="rounded-2xl border border-white/20 bg-black/25 p-4">
+            <h4 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-100">Plano de Aula</h4>
+            <p id="planoAula" class="whitespace-pre-line text-sm text-slate-100"></p>
+          </article>
+          <article class="rounded-2xl border border-white/20 bg-black/25 p-4">
+            <h4 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-100">Lista do que levar</h4>
+            <p id="equipamentos" class="whitespace-pre-line text-sm text-slate-100"></p>
+          </article>
+        </div>
+      </section>
+
+      <script>
+        function modalidadeBadge(modalidade) {
+          if (modalidade === 'Volei') return { label: 'Volei', chip: 'bg-orange-100 text-orange-700 border-orange-200' };
+          if (modalidade === 'Natacao') return { label: 'Natacao', chip: 'bg-sky-100 text-sky-700 border-sky-200' };
+          return { label: 'Funcional', chip: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+        }
+
+        async function carregarAulas() {
+          const feed = document.getElementById('feedAulas');
+          feed.innerHTML = '<article class="glass-card rounded-3xl p-4"><p class="text-sm text-slate-100">Atualizando feed...</p></article>';
+
+          let aulas;
+          try {
+            const resposta = await fetch('/api/aulas');
+            aulas = await resposta.json();
+            if (!resposta.ok) {
+              throw new Error(aulas.error || 'Falha ao carregar aulas.');
+            }
+          } catch (erro) {
+            feed.innerHTML = '<article class="glass-card rounded-3xl p-4"><p class="text-sm font-semibold text-rose-200">Nao foi possivel carregar o feed agora.</p></article>';
+            showToast(erro.message || 'Erro de conexao.', 'error');
+            return;
+          }
+
+          feed.innerHTML = '';
+
+          if (!Array.isArray(aulas) || aulas.length === 0) {
+            feed.innerHTML = '<p class="glass-card rounded-xl p-4 text-sm text-slate-100">Nenhuma aula cadastrada no momento.</p>';
+            return;
+          }
+
+          for (const aula of aulas) {
+            const badge = modalidadeBadge(aula.modalidade);
+            const lotado = aula.vagas_disponiveis <= 0 && !aula.checked_in;
+            const card = document.createElement('article');
+            card.className = 'glass-card rounded-3xl p-4';
+            card.innerHTML = `
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <span class="rounded-full border px-2 py-1 text-xs font-bold ${badge.chip}">${badge.label}</span>
+                <span class="text-xs font-semibold uppercase tracking-wide text-slate-200">${aula.data}</span>
+              </div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">${aula.data} - ${aula.horario}</p>
+              <h3 class="brand-title mt-1 text-xl font-black text-white sm:text-2xl">${aula.modalidade}</h3>
+              <p class="mt-2 text-sm text-slate-100">${aula.confirmados}/${aula.vagas_totais} confirmados</p>
+              <p class="mb-4 text-sm ${lotado ? 'font-bold text-rose-300' : 'text-slate-100'}">${lotado ? 'Turma lotada' : `Vagas: ${aula.vagas_disponiveis}`}</p>
+              ${aula.checked_in
+                ? `<div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2 rounded-xl bg-emerald-600/30 border border-emerald-500/40 px-3 py-2">
+                      <span class="text-sm font-bold text-emerald-300">✓ Presença confirmada</span>
+                    </div>
+                    <button data-id="${aula.id}" data-action="cancelar" class="w-full rounded-xl border border-rose-500/60 bg-rose-600/20 px-3 py-2 text-sm font-bold text-rose-300 transition hover:bg-rose-600/40">
+                      Cancelar presença
+                    </button>
+                  </div>`
+                : lotado
+                  ? `<button disabled class="w-full rounded-xl bg-slate-400 px-3 py-2 text-sm font-bold text-white">Sem vagas</button>`
+                  : `<button data-id="${aula.id}" data-action="checkin" class="register-btn w-full rounded-xl px-3 py-2 text-sm font-bold text-white transition-transform duration-200 hover:scale-[1.02]">Fazer check-in</button>`
+              }
+            `;
+            feed.appendChild(card);
+          }
+
+          feed.querySelectorAll('button[data-id]').forEach((botao) => {
+            botao.addEventListener('click', async () => {
+              const id = botao.dataset.id;
+              const action = botao.dataset.action;
+
+              if (action === 'cancelar') {
+                if (!confirm('Deseja cancelar sua presença nesta aula?')) return;
+                const resposta = await fetch(`/api/checkin/${id}`, { method: 'DELETE' });
+                const dados = await resposta.json();
+                if (!resposta.ok) {
+                  showToast(dados.error || 'Falha ao cancelar presença.', 'error');
+                  return;
+                }
+                showToast(dados.message || 'Presença cancelada.');
+              } else {
+                const resposta = await fetch(`/api/checkin/${id}`, { method: 'POST' });
+                const dados = await resposta.json();
+                if (!resposta.ok) {
+                  showToast(dados.error || 'Falha ao confirmar check-in.', 'error');
+                  return;
+                }
+                showToast(dados.message || 'Check-in realizado.');
+              }
+
+              await carregarAulas();
+              await carregarMinhaAula();
+            });
+          });
+        }
+
+        async function carregarMinhaAula() {
+          const box = document.getElementById('minhaAulaBox');
+          let dados;
+
+          try {
+            const resposta = await fetch('/api/minha-aula');
+            dados = await resposta.json();
+            if (!resposta.ok) {
+              throw new Error(dados.error || 'Falha ao carregar sua aula.');
+            }
+          } catch (erro) {
+            box.classList.add('hidden');
+            showToast(erro.message || 'Erro ao carregar sua aula.', 'error');
+            return;
+          }
+
+          if (!dados.has_class) {
+            box.classList.add('hidden');
+            return;
+          }
+
+          document.getElementById('metaAula').textContent = `${dados.modalidade} em ${dados.data} as ${dados.horario}`;
+          document.getElementById('planoAula').textContent = dados.plano_aula;
+          document.getElementById('equipamentos').textContent = dados.equipamentos_necessarios;
+          box.classList.remove('hidden');
+        }
+
+        carregarAulas();
+        carregarMinhaAula();
+      </script>
+    {% endif %}
+
+    <script>
+      function handleLogoError(img) {
+        img.classList.add('hidden');
+        const fallback = img.nextElementSibling;
+        if (fallback) fallback.classList.remove('hidden');
+      }
+
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto rounded-xl px-4 py-3 text-sm font-bold shadow-lg ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.remove();
+        }, 2600);
+      }
+
+      function abrirModalSenha() {
+        document.getElementById('modalSenha').classList.remove('hidden');
+      }
+
+      function fecharModalSenha() {
+        document.getElementById('modalSenha').classList.add('hidden');
+      }
+    </script>
+    <script src="{{ url_for('static', filename='splash-screen.js') }}"></script>
+  </main>
+</body>
+</html>

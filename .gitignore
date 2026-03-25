@@ -1,0 +1,17 @@
+# Ambiente local
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets locais
+.env
+
+# Banco local (em produção usar Postgres no Render)
+app.db
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

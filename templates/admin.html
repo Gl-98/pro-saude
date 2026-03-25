@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo - Pro Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --brand-orange: #ef7b2a;
+      --brand-blue: #1f4f7a;
+      --text-light: #f8fafc;
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --input-bg: rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #04070d;
+    }
+
+    .brand-title {
+      letter-spacing: 0.01em;
+      text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .input-premium {
+      width: 100%;
+      border-radius: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--input-bg);
+      color: #ffffff;
+      padding: 0.66rem 0.86rem;
+      outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .input-premium:focus {
+      border-color: rgba(76, 154, 255, 0.95);
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18), 0 0 22px rgba(66, 133, 244, 0.38);
+    }
+
+    .input-premium option {
+      color: #0f172a;
+    }
+
+    .btn-primary {
+      background: linear-gradient(125deg, #304860 0%, #5f7690 45%, #a0b3c7 100%);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.03);
+      filter: brightness(1.05);
+    }
+
+    .btn-orange {
+      background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 24px rgba(224, 100, 26, 0.35);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .btn-orange:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.08) brightness(1.03);
+    }
+
+    @media (max-width: 640px) {
+      .video-overlay {
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-[color:var(--text-light)]">
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="https://videos.pexels.com/video-files/6216964/6216964-hd_1920_1080_30fps.mp4" type="video/mp4" />
+    <source src="https://videos.pexels.com/video-files/6217331/6217331-hd_1080_1920_30fps.mp4" type="video/mp4" />
+  </video>
+  <div class="video-overlay" aria-hidden="true"></div>
+
+  <main class="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10">
+    <header class="glass-card mb-8 rounded-3xl p-4 sm:p-5 md:mb-10 md:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-3 sm:items-center">
+          <div class="rounded-2xl bg-white/85 p-2 shadow-inner ring-1 ring-white/80">
+            <img src="{{ url_for('static', filename='img/logo-pro-saude.png') }}" alt="Logo Pro Saude" class="h-14 w-auto rounded-lg object-contain" onerror="handleLogoError(this)" />
+            <div class="hidden rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-800">Logo nao encontrada em static/img/logo-pro-saude.png</div>
+          </div>
+          <div class="min-w-0">
+            <h1 class="brand-title text-3xl font-black text-white sm:text-4xl md:text-5xl">Painel Administrativo</h1>
+            <p class="text-sm text-slate-100/90">Bem-vinda, {{ user.nome }}</p>
+          </div>
+        </div>
+        <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
+          <a href="{{ url_for('index') }}" class="glass-card rounded-xl px-3 py-2 text-sm font-semibold text-white">Voltar</a>
+          <form action="{{ url_for('logout') }}" method="post">
+            <button class="btn-primary rounded-xl px-3 py-2 text-sm font-semibold text-white">Sair</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="mb-5 space-y-2">
+          {% for category, message in messages %}
+            <div class="glass-card rounded-lg px-4 py-3 text-sm font-medium {% if category == 'error' %}text-rose-200{% else %}text-emerald-200{% endif %}">{{ message }}</div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    <section class="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <article class="glass-card rounded-2xl p-3 sm:p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">Alunos</p>
+        <p class="brand-title text-3xl font-black text-white">{{ stats.total_alunos }}</p>
+      </article>
+      <article class="glass-card rounded-2xl p-3 sm:p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">Aulas</p>
+        <p class="brand-title text-3xl font-black text-white">{{ stats.total_aulas }}</p>
+      </article>
+      <article class="glass-card rounded-2xl p-3 sm:p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">Check-ins</p>
+        <p class="brand-title text-3xl font-black text-white">{{ stats.total_checkins }}</p>
+      </article>
+      <article class="glass-card rounded-2xl p-3 sm:p-4 {% if stats.total_pendentes > 0 %}ring-1 ring-amber-300/60{% endif %}">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">Aguardando</p>
+        <p class="brand-title text-3xl font-black {% if stats.total_pendentes > 0 %}text-amber-300{% else %}text-white{% endif %}">{{ stats.total_pendentes }}</p>
+      </article>
+      <article class="glass-card rounded-2xl p-3 sm:p-4 {% if stats.total_resets > 0 %}ring-1 ring-orange-300/60{% endif %}">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-200">Resets</p>
+        <p class="brand-title text-3xl font-black {% if stats.total_resets > 0 %}text-orange-300{% else %}text-white{% endif %}">{{ stats.total_resets }}</p>
+      </article>
+    </section>
+
+    {% if pendentes %}
+    <section class="glass-card mb-8 rounded-3xl p-5">
+      <h2 class="brand-title mb-4 text-xl font-bold text-amber-200 sm:text-2xl">Cadastros aguardando aprovacao ({{ pendentes|length }})</h2>
+      <div class="space-y-3">
+        {% for aluno in pendentes %}
+          <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/20 bg-black/25 p-4">
+            <div>
+              <p class="font-bold text-white">{{ aluno.nome }}</p>
+              <p class="text-sm text-slate-200">{{ aluno.email }}</p>
+            </div>
+            <div class="flex w-full gap-2 sm:w-auto">
+              <form method="post" action="{{ url_for('admin_aprovar_aluno', aluno_id=aluno.id) }}">
+                <button class="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:scale-105 hover:bg-emerald-700 sm:w-auto">Aprovar</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_rejeitar_aluno', aluno_id=aluno.id) }}" onsubmit="return confirm('Tem certeza que deseja rejeitar e remover este cadastro?');">
+                <button class="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:scale-105 hover:bg-rose-700 sm:w-auto">Rejeitar</button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if resets_pendentes %}
+    <section class="glass-card mb-8 rounded-3xl p-5">
+      <h2 class="brand-title mb-4 text-xl font-bold text-orange-200 sm:text-2xl">Resets de senha aguardando aprovacao ({{ resets_pendentes|length }})</h2>
+      <div class="space-y-3">
+        {% for reset in resets_pendentes %}
+          <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/20 bg-black/25 p-4">
+            <div>
+              <p class="font-bold text-white">{{ reset.aluno.nome }}</p>
+              <p class="text-sm text-slate-200">{{ reset.aluno.email }}</p>
+              <p class="text-xs text-slate-300">Solicitado em: {{ reset.criada_em.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+            <div class="flex w-full gap-2 sm:w-auto">
+              <form method="post" action="{{ url_for('admin_aprovar_reset', requisicao_id=reset.id) }}">
+                <button class="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:scale-105 hover:bg-emerald-700 sm:w-auto">Redefinir Senha</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_rejeitar_reset', requisicao_id=reset.id) }}" onsubmit="return confirm('Tem certeza que deseja rejeitar esta solicitacao?');">
+                <button class="w-full rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:scale-105 hover:bg-rose-700 sm:w-auto">Rejeitar</button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="glass-card mb-8 rounded-3xl p-6">
+      <h2 class="brand-title mb-5 text-2xl font-bold text-white sm:text-3xl">Gerenciar Alunos Aprovados ({{ alunos_aprovados|length }})</h2>
+      <div class="mb-6 max-h-96 space-y-2 overflow-y-auto">
+        {% if alunos_aprovados %}
+          {% for aluno in alunos_aprovados %}
+            <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/20 bg-black/25 p-3">
+              <div>
+                <p class="font-bold text-white">{{ aluno.nome }}</p>
+                <p class="text-sm text-slate-200">{{ aluno.email }}</p>
+              </div>
+              <form method="post" action="{{ url_for('admin_excluir_aluno', aluno_id=aluno.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir este aluno? Esta acao eh permanente.');">
+                <button class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white transition hover:scale-105">Excluir</button>
+              </form>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="text-sm text-slate-200">Nenhum aluno aprovado ainda.</p>
+        {% endif %}
+      </div>
+    </section>
+
+
+    <section class="glass-card mb-8 rounded-3xl p-6">
+      <h2 class="brand-title mb-5 text-2xl font-bold text-white sm:text-3xl">Cadastrar aula do dia</h2>
+      <form method="post" class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Modalidade</label>
+          <select name="modalidade" required class="input-premium">
+            <option value="">Selecione</option>
+            <option value="Volei">Volei</option>
+            <option value="Natacao">Natacao</option>
+            <option value="Funcional">Funcional</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Data</label>
+          <input type="date" name="data" required class="input-premium" />
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Horario</label>
+          <input type="time" name="horario" required class="input-premium" />
+        </div>
+        <div>
+          <label class="mb-2 block text-sm font-medium text-slate-100">Vagas totais</label>
+          <input type="number" min="1" name="vagas_totais" required class="input-premium" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="mb-2 block text-sm font-medium text-slate-100">Plano de aula</label>
+          <textarea name="plano_aula" rows="4" required class="input-premium"></textarea>
+        </div>
+        <div class="md:col-span-2">
+          <label class="mb-2 block text-sm font-medium text-slate-100">Equipamentos necessarios</label>
+          <textarea name="equipamentos_necessarios" rows="3" required class="input-premium"></textarea>
+        </div>
+        <div class="md:col-span-2">
+          <button class="btn-orange rounded-xl px-5 py-2.5 font-bold text-white">Salvar aula</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="glass-card rounded-3xl p-5 md:p-6">
+      <h2 class="brand-title mb-5 text-2xl font-bold text-white sm:text-3xl">Alunos confirmados por horario</h2>
+      <div class="space-y-4">
+        {% if resumo %}
+          {% for item in resumo %}
+            <article class="rounded-2xl border border-white/20 bg-black/25 p-4">
+              <div class="mb-2 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+                <h3 class="text-base font-bold text-white">{{ item.aula.modalidade }} - {{ item.aula.data.strftime('%d/%m/%Y') }} as {{ item.aula.horario.strftime('%H:%M') }}</h3>
+                <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+                  <span class="text-sm text-slate-200">{{ item.confirmados|length }}/{{ item.aula.vagas_totais }} confirmados</span>
+                  <form method="post" action="{{ url_for('admin_delete_aula', aula_id=item.aula.id) }}" onsubmit="return confirm('Deseja remover esta aula? Esta acao remove tambem os check-ins.');">
+                    <button class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white transition hover:scale-105">Excluir</button>
+                  </form>
+                </div>
+              </div>
+              {% if item.confirmados %}
+                <div class="space-y-2">
+                  {% for aluno in item.confirmados %}
+                    <article class="rounded-xl border border-white/15 bg-black/20 p-3">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p class="font-semibold text-white">{{ aluno.nome }}</p>
+                          <p class="text-xs text-slate-300">{{ aluno.email }}</p>
+                          <p class="text-xs text-slate-300">Pontos neste check-in: {{ aluno.pontos_recebidos }}</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          <form method="post" action="{{ url_for('admin_marcar_presenca', checkin_id=aluno.checkin_id) }}">
+                            <input type="hidden" name="status" value="compareceu" />
+                            <button class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:scale-105">Compareceu (+10)</button>
+                          </form>
+                          <form method="post" action="{{ url_for('admin_marcar_presenca', checkin_id=aluno.checkin_id) }}">
+                            <input type="hidden" name="status" value="faltou" />
+                            <button class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white transition hover:scale-105">Faltou (0)</button>
+                          </form>
+                        </div>
+                      </div>
+
+                      <div class="mt-2">
+                        {% if aluno.compareceu is sameas true %}
+                          <span class="rounded-full bg-emerald-600/30 px-2 py-1 text-xs font-semibold text-emerald-200">Status: presença confirmada</span>
+                        {% elif aluno.compareceu is sameas false %}
+                          <span class="rounded-full bg-rose-600/30 px-2 py-1 text-xs font-semibold text-rose-200">Status: falta registrada</span>
+                        {% else %}
+                          <span class="rounded-full bg-slate-600/30 px-2 py-1 text-xs font-semibold text-slate-200">Status: aguardando validação do instrutor</span>
+                        {% endif %}
+                      </div>
+                    </article>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-sm text-slate-200">Nenhum aluno confirmado ainda.</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="text-sm text-slate-200">Nenhuma aula cadastrada.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <script>
+      function handleLogoError(img) {
+        img.classList.add('hidden');
+        const fallback = img.nextElementSibling;
+        if (fallback) fallback.classList.remove('hidden');
+      }
+    </script>
+  </main>
+</body>
+</html>

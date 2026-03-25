@@ -1,0 +1,15 @@
+<div id="splashScreen" class="splash-screen" role="presentation" aria-hidden="true">
+  <div class="splash-screen__glow splash-screen__glow--left"></div>
+  <div class="splash-screen__glow splash-screen__glow--right"></div>
+  <div class="splash-screen__content">
+    <img
+      src="{{ url_for('splash_asset', filename='splash-nova.png') }}?v=20260331"
+      alt="Pro Saúde Treinamento ao ar livre"
+      class="splash-screen__image"
+      fetchpriority="high"
+      decoding="async"
+      loading="eager"
+      onerror="if (!this.dataset.fallback) { this.dataset.fallback = '1'; this.src = '{{ url_for('static', filename='img/logo-pro-saude.png') }}'; }"
+    />
+  </div>
+</div>
