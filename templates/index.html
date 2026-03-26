@@ -211,7 +211,7 @@
         </div>
         {% if user %}
           <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
-            <a href="{{ url_for('rats') }}" class="rounded-xl bg-slate-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Perfil</a>
+            <a href="{{ url_for('perfil') }}" class="rounded-xl bg-slate-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Perfil</a>
             <a href="{{ url_for('ranking') }}" class="rounded-xl bg-amber-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Ranking</a>
             {% if user.is_admin %}
               <a href="{{ url_for('admin') }}" class="rounded-xl bg-[color:var(--brand-blue)] px-3 py-2 text-sm font-semibold text-white shadow">Painel Admin</a>
