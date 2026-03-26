@@ -6,6 +6,7 @@ import smtplib
 import threading
 import string
 import random
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import date, datetime
@@ -23,9 +24,10 @@ from flask import (
     url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import UniqueConstraint, case, func
+from sqlalchemy import UniqueConstraint, case, func, or_
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 dotenv_spec = importlib.util.find_spec("dotenv")
 if dotenv_spec:
@@ -34,6 +36,12 @@ if dotenv_spec:
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads", "fotos")
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+# Criar diretório de uploads se não existir
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 
 def resolve_database_uri() -> str:
@@ -52,8 +60,24 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "troque-esta-chave-em-producao")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("RENDER", "") != ""
 
 db = SQLAlchemy(app)
+
+
+@app.after_request
+def disable_cache(response):
+    """Evita cache agressivo durante desenvolvimento para refletir mudanças de UI imediatamente."""
+    path = request.path.lower()
+    is_html = (response.mimetype or "").startswith("text/html")
+    is_static_asset = path.endswith(".js") or path.endswith(".css")
+
+    if is_html or is_static_asset:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
+    return response
 
 MODALIDADES_VALIDAS = {"Volei", "Natacao", "Funcional"}
 
@@ -81,6 +105,7 @@ class Aluno(db.Model):
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     aprovado = db.Column(db.Boolean, default=False, nullable=False)
+    foto_path = db.Column(db.String(255), nullable=True)
 
     checkins = db.relationship("Checkin", back_populates="aluno", cascade="all, delete-orphan")
 
@@ -111,6 +136,42 @@ class RequisicaoResetSenha(db.Model):
     nova_senha = db.Column(db.String(255), nullable=True)
 
     aluno = db.relationship("Aluno")
+
+
+class RankingEvento(db.Model):
+    __tablename__ = "ranking_eventos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    modalidade = db.Column(db.String(30), nullable=False)
+    pontos_ganhos = db.Column(db.Integer, nullable=False)
+    data_hora = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    origem = db.Column(db.String(30), nullable=False, default="gym")
+    request_id = db.Column(db.String(80), nullable=True)
+    detalhes = db.Column(db.Text, nullable=True)
+
+    aluno = db.relationship("Aluno")
+
+
+class Desafio(db.Model):
+    __tablename__ = "desafios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    criador_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    oponente_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=True)
+    titulo = db.Column(db.String(120), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    tipo = db.Column(db.String(30), nullable=False)  # tempo, repeticoes, distancia, livre
+    meta = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(20), default="aberto", nullable=False)  # aberto, aceito, concluido, cancelado
+    resultado_criador = db.Column(db.String(200), nullable=True)
+    resultado_oponente = db.Column(db.String(200), nullable=True)
+    vencedor_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=True)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    criador = db.relationship("Aluno", foreign_keys=[criador_id])
+    oponente = db.relationship("Aluno", foreign_keys=[oponente_id])
+    vencedor = db.relationship("Aluno", foreign_keys=[vencedor_id])
 
 
 def current_user() -> Aluno | None:
@@ -188,6 +249,8 @@ def migrate_database() -> None:
         if "aprovado" not in columns:
             conn.execute(db.text("ALTER TABLE alunos ADD COLUMN aprovado BOOLEAN NOT NULL DEFAULT 0"))
             conn.execute(db.text("UPDATE alunos SET aprovado = 1 WHERE is_admin = 1"))
+        if "foto_path" not in columns:
+            conn.execute(db.text("ALTER TABLE alunos ADD COLUMN foto_path VARCHAR(255)"))
 
         checkin_result = conn.execute(db.text("PRAGMA table_info(checkins)"))
         checkin_columns = [row[1] for row in checkin_result.fetchall()]
@@ -195,6 +258,19 @@ def migrate_database() -> None:
             conn.execute(db.text("ALTER TABLE checkins ADD COLUMN compareceu BOOLEAN"))
         if "pontos_recebidos" not in checkin_columns:
             conn.execute(db.text("ALTER TABLE checkins ADD COLUMN pontos_recebidos INTEGER NOT NULL DEFAULT 0"))
+
+        ranking_result = conn.execute(db.text("PRAGMA table_info(ranking_eventos)"))
+        ranking_columns = [row[1] for row in ranking_result.fetchall()]
+        if "request_id" not in ranking_columns:
+            conn.execute(db.text("ALTER TABLE ranking_eventos ADD COLUMN request_id VARCHAR(80)"))
+
+        conn.execute(
+            db.text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_ranking_evento_user_request "
+                "ON ranking_eventos(user_id, request_id) "
+                "WHERE request_id IS NOT NULL"
+            )
+        )
 
         conn.commit()
 
@@ -205,6 +281,7 @@ def montar_ranking_alunos() -> list[dict]:
             Aluno.id.label("aluno_id"),
             Aluno.nome.label("nome"),
             Aluno.email.label("email"),
+            Aluno.foto_path.label("foto_path"),
             func.coalesce(func.sum(Checkin.pontos_recebidos), 0).label("pontos"),
             func.coalesce(func.sum(case((Checkin.compareceu.is_(True), 1), else_=0)), 0).label("presencas"),
             func.count(Checkin.id).label("checkins"),
@@ -215,12 +292,23 @@ def montar_ranking_alunos() -> list[dict]:
         .all()
     )
 
+    pontos_extras_rows = (
+        db.session.query(
+            RankingEvento.user_id.label("aluno_id"),
+            func.coalesce(func.sum(RankingEvento.pontos_ganhos), 0).label("pontos_extras"),
+        )
+        .group_by(RankingEvento.user_id)
+        .all()
+    )
+    pontos_extras_map = {row.aluno_id: int(row.pontos_extras or 0) for row in pontos_extras_rows}
+
     ranking = [
         {
             "aluno_id": row.aluno_id,
             "nome": row.nome,
             "email": row.email,
-            "pontos": int(row.pontos or 0),
+            "foto_path": row.foto_path,
+            "pontos": int(row.pontos or 0) + pontos_extras_map.get(row.aluno_id, 0),
             "presencas": int(row.presencas or 0),
             "checkins": int(row.checkins or 0),
         }
@@ -233,6 +321,142 @@ def montar_ranking_alunos() -> list[dict]:
         item["posicao"] = idx
 
     return ranking
+
+
+def limpar_aulas_passadas() -> None:
+    """Deleta automaticamente as aulas que já passaram (data < hoje)."""
+    try:
+        hoje = date.today()
+        aulas_passadas = Aula.query.filter(Aula.data < hoje).all()
+        
+        for aula in aulas_passadas:
+            # Deletar check-ins associados (cascade vai fazer isso, mas deixamos explícito)
+            Checkin.query.filter_by(aula_id=aula.id).delete()
+            # Deletar a aula
+            db.session.delete(aula)
+        
+        if aulas_passadas:
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+        pass
+
+
+def allowed_file(filename: str) -> bool:
+    """Verifica se a extensão do arquivo é permitida."""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def salvar_foto_aluno(file, aluno_id: int) -> str | None:
+    """
+    Salva a foto do aluno e retorna o caminho relativo.
+    Retorna None se houver erro.
+    """
+    if not file or file.filename == "":
+        return None
+
+    if not allowed_file(file.filename):
+        return None
+
+    try:
+        # Gerar nome único para arquivo
+        ext = file.filename.rsplit(".", 1)[1].lower()
+        filename = secure_filename(f"aluno_{aluno_id}_{datetime.now().timestamp()}.{ext}")
+        filepath = os.path.join(UPLOADS_DIR, filename)
+        
+        # Salvar arquivo
+        file.save(filepath)
+        
+        # Retornar caminho relativo
+        return f"uploads/fotos/{filename}"
+    except Exception:
+        return None
+
+
+def deletar_foto_aluno(foto_path: str) -> bool:
+    """Deleta a foto anterior do aluno se existir."""
+    if not foto_path:
+        return True
+    
+    try:
+        full_path = os.path.join(BASE_DIR, foto_path)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+    except Exception:
+        pass
+    
+    return True
+
+
+def normalizar_modalidade(modalidade: str) -> str:
+    valor = (modalidade or "").strip().lower()
+    mapa = {
+        "volei": "volei",
+        "vôlei": "volei",
+        "natacao": "natacao",
+        "natação": "natacao",
+        "funcional": "funcional",
+    }
+    return mapa.get(valor, "")
+
+
+def processar_pontos_ranking(registros: list[dict], origem: str = "gym") -> dict:
+    """Serviço central para contabilizar pontos extras no ranking global."""
+    eventos: list[RankingEvento] = []
+    total_pontos = 0
+    duplicados = 0
+
+    for item in registros:
+        user_id = int(item.get("user_id", 0))
+        modalidade = normalizar_modalidade(item.get("modalidade", ""))
+        pontos = int(item.get("pontos_ganhos", 0))
+        data_hora_raw = str(item.get("data_hora", "")).strip()
+        detalhes_raw = item.get("detalhes")
+        request_id = str(item.get("request_id", "")).strip() or None
+
+        if not user_id or not modalidade or pontos <= 0:
+            continue
+
+        aluno = Aluno.query.filter_by(id=user_id, aprovado=True, is_admin=False).first()
+        if not aluno:
+            continue
+
+        if request_id:
+            duplicado = RankingEvento.query.filter_by(user_id=user_id, request_id=request_id).first()
+            if duplicado:
+                duplicados += 1
+                continue
+
+        try:
+            data_hora = datetime.fromisoformat(data_hora_raw.replace("Z", "+00:00")) if data_hora_raw else datetime.utcnow()
+        except ValueError:
+            data_hora = datetime.utcnow()
+
+        evento = RankingEvento(
+            user_id=user_id,
+            modalidade=modalidade,
+            pontos_ganhos=pontos,
+            data_hora=data_hora,
+            origem=origem,
+            request_id=request_id,
+            detalhes=json.dumps(detalhes_raw, ensure_ascii=True) if detalhes_raw is not None else None,
+        )
+        eventos.append(evento)
+        total_pontos += pontos
+
+    if not eventos:
+        if duplicados:
+            return {"ok": False, "duplicate": True, "error": "Pontuação já processada para esta ação."}
+        return {"ok": False, "error": "Nenhum registro de pontuação válido para processar."}
+
+    db.session.add_all(eventos)
+    db.session.commit()
+
+    return {
+        "ok": True,
+        "registros": len(eventos),
+        "total_pontos": total_pontos,
+    }
 
 
 def enviar_email_aprovacao(nome: str, email_destino: str) -> None:
@@ -529,6 +753,7 @@ def splash_asset(filename: str):
 
 @app.route("/", methods=["GET"])
 def index():
+    limpar_aulas_passadas()
     user = current_user()
     return render_template("index.html", user=user)
 
@@ -536,6 +761,7 @@ def index():
 @app.route("/ranking", methods=["GET"])
 @login_required
 def ranking():
+    limpar_aulas_passadas()
     user = current_user()
     ranking_lista = montar_ranking_alunos()
     podio = ranking_lista[:3]
@@ -550,6 +776,205 @@ def ranking():
         ranking=ranking_lista,
         minha_posicao=minha_posicao,
     )
+
+
+@app.route("/uploads/fotos/<filename>")
+def servir_foto(filename: str):
+    """Serve as fotos dos alunos."""
+    try:
+        return send_from_directory(UPLOADS_DIR, filename)
+    except Exception:
+        flash("Foto não encontrada.", "error")
+        return redirect(url_for("index"))
+
+
+@app.route("/perfil", methods=["GET"])
+@login_required
+def perfil():
+    """Exibe o perfil do aluno com opção para editar foto."""
+    user = current_user()
+    return render_template("perfil.html", user=user)
+
+
+@app.route("/perfil/foto", methods=["POST"])
+@login_required
+def upload_foto():
+    """Realiza o upload da foto do aluno."""
+    user = current_user()
+    
+    if "foto" not in request.files:
+        return jsonify({"error": "Nenhum arquivo foi enviado."}), 400
+    
+    file = request.files["foto"]
+    
+    if file.filename == "":
+        return jsonify({"error": "Nenhum arquivo foi selecionado."}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Tipo de arquivo não permitido. Use JPG, PNG ou WEBP."}), 400
+    
+    if len(file.read()) > MAX_FILE_SIZE:
+        file.seek(0)
+        return jsonify({"error": "Arquivo muito grande. Máximo de 5 MB."}), 400
+    
+    file.seek(0)
+    
+    # Deletar foto anterior se existir
+    if user.foto_path:
+        deletar_foto_aluno(user.foto_path)
+    
+    # Salvar nova foto
+    foto_path = salvar_foto_aluno(file, user.id)
+    if not foto_path:
+        return jsonify({"error": "Erro ao salvar a foto."}), 500
+    
+    # Atualizar banco de dados
+    user.foto_path = foto_path
+    db.session.commit()
+    
+    return jsonify({"message": "Foto salva com sucesso!", "foto_path": foto_path}), 200
+
+
+# ── RATS: Desafios entre alunos ──────────────────────────────────────
+
+@app.route("/rats", methods=["GET"])
+@login_required
+def rats():
+    user = current_user()
+    return render_template("rats.html", user=user)
+
+
+@app.route("/api/rats/desafios", methods=["GET"])
+@api_login_required
+def api_rats_listar():
+    user = current_user()
+    desafios = (
+        Desafio.query
+        .filter(
+            db.or_(
+                Desafio.criador_id == user.id,
+                Desafio.oponente_id == user.id,
+                Desafio.status == "aberto",
+            )
+        )
+        .order_by(Desafio.criado_em.desc())
+        .all()
+    )
+    resultado = []
+    for d in desafios:
+        resultado.append({
+            "id": d.id,
+            "titulo": d.titulo,
+            "descricao": d.descricao,
+            "tipo": d.tipo,
+            "meta": d.meta,
+            "status": d.status,
+            "criador": {"id": d.criador.id, "nome": d.criador.nome},
+            "oponente": {"id": d.oponente.id, "nome": d.oponente.nome} if d.oponente else None,
+            "resultado_criador": d.resultado_criador,
+            "resultado_oponente": d.resultado_oponente,
+            "vencedor": {"id": d.vencedor.id, "nome": d.vencedor.nome} if d.vencedor else None,
+            "criado_em": d.criado_em.strftime("%d/%m/%Y %H:%M"),
+            "is_mine": d.criador_id == user.id,
+        })
+    return jsonify(resultado)
+
+
+@app.route("/api/rats/desafios", methods=["POST"])
+@api_login_required
+def api_rats_criar():
+    user = current_user()
+    data = request.get_json(silent=True) or {}
+    titulo = str(data.get("titulo", "")).strip()
+    descricao = str(data.get("descricao", "")).strip()
+    tipo = str(data.get("tipo", "")).strip()
+    meta = str(data.get("meta", "")).strip()
+
+    if not titulo or not descricao or not tipo or not meta:
+        return jsonify({"error": "Preencha todos os campos."}), 400
+    if tipo not in ("tempo", "repeticoes", "distancia", "livre"):
+        return jsonify({"error": "Tipo inválido."}), 400
+
+    desafio = Desafio(criador_id=user.id, titulo=titulo, descricao=descricao, tipo=tipo, meta=meta)
+    db.session.add(desafio)
+    db.session.commit()
+    return jsonify({"message": "Desafio criado!", "id": desafio.id}), 201
+
+
+@app.route("/api/rats/desafios/<int:desafio_id>/aceitar", methods=["POST"])
+@api_login_required
+def api_rats_aceitar(desafio_id):
+    user = current_user()
+    d = Desafio.query.get_or_404(desafio_id)
+    if d.status != "aberto":
+        return jsonify({"error": "Este desafio não está mais aberto."}), 400
+    if d.criador_id == user.id:
+        return jsonify({"error": "Você não pode aceitar seu próprio desafio."}), 400
+    d.oponente_id = user.id
+    d.status = "aceito"
+    db.session.commit()
+    return jsonify({"message": f"Você aceitou o desafio: {d.titulo}!"})
+
+
+@app.route("/api/rats/desafios/<int:desafio_id>/resultado", methods=["POST"])
+@api_login_required
+def api_rats_resultado(desafio_id):
+    user = current_user()
+    d = Desafio.query.get_or_404(desafio_id)
+    if d.status != "aceito":
+        return jsonify({"error": "O desafio precisa ser aceito antes de registrar resultado."}), 400
+    if user.id not in (d.criador_id, d.oponente_id):
+        return jsonify({"error": "Você não participa deste desafio."}), 403
+
+    data = request.get_json(silent=True) or {}
+    resultado = str(data.get("resultado", "")).strip()
+    if not resultado:
+        return jsonify({"error": "Informe seu resultado."}), 400
+
+    if user.id == d.criador_id:
+        d.resultado_criador = resultado
+    else:
+        d.resultado_oponente = resultado
+
+    if d.resultado_criador and d.resultado_oponente:
+        d.status = "concluido"
+
+    db.session.commit()
+    return jsonify({"message": "Resultado registrado!"})
+
+
+@app.route("/api/rats/desafios/<int:desafio_id>/vencedor", methods=["POST"])
+@api_login_required
+def api_rats_vencedor(desafio_id):
+    user = current_user()
+    d = Desafio.query.get_or_404(desafio_id)
+    if d.status != "concluido":
+        return jsonify({"error": "O desafio ainda não foi concluído."}), 400
+    if user.id not in (d.criador_id, d.oponente_id):
+        return jsonify({"error": "Você não participa deste desafio."}), 403
+
+    data = request.get_json(silent=True) or {}
+    vencedor_id = data.get("vencedor_id")
+    if vencedor_id not in (d.criador_id, d.oponente_id):
+        return jsonify({"error": "Vencedor inválido."}), 400
+
+    d.vencedor_id = vencedor_id
+    db.session.commit()
+    return jsonify({"message": "Vencedor definido!"})
+
+
+@app.route("/api/rats/desafios/<int:desafio_id>/cancelar", methods=["POST"])
+@api_login_required
+def api_rats_cancelar(desafio_id):
+    user = current_user()
+    d = Desafio.query.get_or_404(desafio_id)
+    if d.criador_id != user.id:
+        return jsonify({"error": "Apenas o criador pode cancelar."}), 403
+    if d.status == "concluido":
+        return jsonify({"error": "Desafio já concluído."}), 400
+    d.status = "cancelado"
+    db.session.commit()
+    return jsonify({"message": "Desafio cancelado."})
 
 
 @app.route("/register", methods=["POST"])
@@ -640,6 +1065,7 @@ def forgot_password():
 @app.route("/api/aulas", methods=["GET"])
 @api_login_required
 def api_aulas():
+    limpar_aulas_passadas()
     user = current_user()
 
     aulas = (
@@ -733,14 +1159,15 @@ def api_cancelar_checkin(aula_id: int):
 @app.route("/api/minha-aula", methods=["GET"])
 @api_login_required
 def api_minha_aula():
+    limpar_aulas_passadas()
     user = current_user()
 
     hoje = date.today()
     aula = (
         db.session.query(Aula)
         .join(Checkin, Checkin.aula_id == Aula.id)
-        .filter(Checkin.aluno_id == user.id, Aula.data == hoje)
-        .order_by(Aula.horario.asc())
+        .filter(Checkin.aluno_id == user.id, Aula.data >= hoje)
+        .order_by(Aula.data.asc(), Aula.horario.asc())
         .first()
     )
 
@@ -759,9 +1186,179 @@ def api_minha_aula():
     )
 
 
+@app.route("/api/gym/checkin-info", methods=["GET"])
+@api_login_required
+def api_gym_checkin_info():
+    """Retorna a modalidade de check-in atual do usuário para a tela Gym."""
+    user = current_user()
+    hoje = date.today()
+    aula = (
+        db.session.query(Aula)
+        .join(Checkin, Checkin.aula_id == Aula.id)
+        .filter(Checkin.aluno_id == user.id, Aula.data >= hoje)
+        .order_by(Aula.data.asc(), Aula.horario.asc())
+        .first()
+    )
+
+    if not aula:
+        return jsonify({"has_checkin": False, "userCheckinInfo": None})
+
+    return jsonify(
+        {
+            "has_checkin": True,
+            "userCheckinInfo": {
+                "userId": user.id,
+                "modalidade": normalizar_modalidade(aula.modalidade),
+                "aulaId": aula.id,
+                "dataHora": datetime.utcnow().isoformat(),
+            },
+        }
+    )
+
+
+@app.route("/api/gym/atletas", methods=["GET"])
+@api_login_required
+def api_gym_atletas():
+    """Busca atletas para composição de duplas na modalidade de vôlei."""
+    termo = request.args.get("q", "").strip().lower()
+
+    query = Aluno.query.filter_by(aprovado=True, is_admin=False)
+    if termo:
+        like = f"%{termo}%"
+        query = query.filter(or_(Aluno.nome.ilike(like), Aluno.email.ilike(like)))
+
+    atletas = query.order_by(Aluno.nome.asc()).limit(30).all()
+    return jsonify(
+        [
+            {"id": atleta.id, "nome": atleta.nome, "email": atleta.email}
+            for atleta in atletas
+        ]
+    )
+
+
+@app.route("/api/gym/process-points", methods=["POST"])
+@api_login_required
+def api_gym_process_points():
+    """Endpoint de serviço para consolidar pontos da tela Gym no ranking global."""
+    user = current_user()
+    payload = request.get_json(silent=True) or {}
+    modalidade = normalizar_modalidade(str(payload.get("modalidade", "")))
+    data_hora = str(payload.get("dataHora", "")).strip() or datetime.utcnow().isoformat()
+    request_id = str(payload.get("requestId", "")).strip()
+
+    if modalidade not in {"volei", "natacao", "funcional"}:
+        return jsonify({"error": "Modalidade inválida para processamento de pontos."}), 400
+    if not request_id:
+        return jsonify({"error": "requestId é obrigatório para evitar pontuação duplicada."}), 400
+
+    try:
+        if modalidade == "volei":
+            score = payload.get("score") or {}
+            pontos_a = int(score.get("timeA", 0))
+            pontos_b = int(score.get("timeB", 0))
+            time_a_ids = [int(v) for v in (payload.get("timeAIds") or [])]
+            time_b_ids = [int(v) for v in (payload.get("timeBIds") or [])]
+
+            if len(time_a_ids) != 2 or len(time_b_ids) != 2:
+                return jsonify({"error": "Cada time deve ter exatamente 2 atletas."}), 400
+            if pontos_a == pontos_b:
+                return jsonify({"error": "Empate não é permitido. Informe placar final com vencedor."}), 400
+
+            ids_unicos = set(time_a_ids + time_b_ids)
+            if len(ids_unicos) != 4:
+                return jsonify({"error": "Os atletas da partida devem ser únicos."}), 400
+            if user.id not in ids_unicos:
+                return jsonify({"error": "A partida precisa incluir o usuário logado."}), 403
+
+            atletas_validos = Aluno.query.filter(Aluno.id.in_(ids_unicos), Aluno.aprovado.is_(True), Aluno.is_admin.is_(False)).count()
+            if atletas_validos != 4:
+                return jsonify({"error": "Um ou mais atletas informados não são válidos."}), 400
+
+            vencedores = time_a_ids if pontos_a > pontos_b else time_b_ids
+            perdedores = time_b_ids if pontos_a > pontos_b else time_a_ids
+
+            registros = []
+            for atleta_id in vencedores:
+                registros.append(
+                    {
+                        "user_id": atleta_id,
+                        "modalidade": modalidade,
+                        "pontos_ganhos": 15,
+                        "data_hora": data_hora,
+                        "request_id": request_id,
+                        "detalhes": payload,
+                    }
+                )
+            for atleta_id in perdedores:
+                registros.append(
+                    {
+                        "user_id": atleta_id,
+                        "modalidade": modalidade,
+                        "pontos_ganhos": 10,
+                        "data_hora": data_hora,
+                        "request_id": request_id,
+                        "detalhes": payload,
+                    }
+                )
+
+            resultado = processar_pontos_ranking(registros, origem="gym")
+            if not resultado.get("ok"):
+                if resultado.get("duplicate"):
+                    return jsonify({"message": "Esta partida já foi processada anteriormente.", "duplicate": True}), 200
+                return jsonify({"error": resultado.get("error", "Falha ao processar pontos.")}), 400
+
+            return jsonify(
+                {
+                    "message": "Partida concluída e pontuação enviada ao ranking.",
+                    "resultado": {
+                        "vencedores": vencedores,
+                        "perdedores": perdedores,
+                        "pontosPorVencedor": 15,
+                        "pontosPorPerdedor": 10,
+                        "registros": resultado["registros"],
+                        "totalPontosEnviados": resultado["total_pontos"],
+                    },
+                }
+            )
+
+        pontos_fixos = 20
+        registros = [
+            {
+                "user_id": user.id,
+                "modalidade": modalidade,
+                "pontos_ganhos": pontos_fixos,
+                "data_hora": data_hora,
+                "request_id": request_id,
+                "detalhes": payload,
+            }
+        ]
+        resultado = processar_pontos_ranking(registros, origem="gym")
+        if not resultado.get("ok"):
+            if resultado.get("duplicate"):
+                return jsonify({"message": "Esta ação já foi processada anteriormente.", "duplicate": True}), 200
+            return jsonify({"error": resultado.get("error", "Falha ao processar pontos.")}), 400
+
+        return jsonify(
+            {
+                "message": "Pontuação enviada ao ranking com sucesso.",
+                "resultado": {
+                    "userId": user.id,
+                    "modalidade": modalidade,
+                    "pontosGanhos": pontos_fixos,
+                    "dataHora": data_hora,
+                    "registros": resultado["registros"],
+                    "totalPontosEnviados": resultado["total_pontos"],
+                },
+            }
+        )
+    except (TypeError, ValueError):
+        return jsonify({"error": "Dados inválidos para processamento de pontos."}), 400
+
+
 @app.route("/admin", methods=["GET", "POST"])
 @admin_required
 def admin():
+    limpar_aulas_passadas()
     guard = current_user()
 
     if request.method == "POST":

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Perfil - Pro Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --brand-orange: #ef7b2a;
+      --brand-blue: #1f4f7a;
+      --text-light: #f8fafc;
+      --input-bg: rgba(0, 0, 0, 0.2);
+      --input-border: rgba(255, 255, 255, 0.2);
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #04070d;
+    }
+
+    .video-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand-title {
+      letter-spacing: 0.01em;
+      text-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .input-premium {
+      width: 100%;
+      border-radius: 0.9rem;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: #ffffff;
+      padding: 0.72rem 0.88rem;
+      outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .input-premium:focus {
+      border-color: rgba(76, 154, 255, 0.95);
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18), 0 0 22px rgba(66, 133, 244, 0.4);
+    }
+
+    .btn-orange {
+      background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 24px rgba(224, 100, 26, 0.35);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .btn-orange:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.08) brightness(1.02);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(125deg, #304860 0%, #5f7690 45%, #a0b3c7 100%);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .btn-secondary:hover {
+      transform: scale(1.05);
+      filter: brightness(1.05);
+    }
+
+    .profile-photo {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .photo-placeholder {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(76, 154, 255, 0.2), rgba(224, 100, 26, 0.2));
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    .upload-area {
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+      transition: border-color 200ms ease, background-color 200ms ease;
+      cursor: pointer;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: rgba(76, 154, 255, 0.6);
+      background: rgba(76, 154, 255, 0.05);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .loading {
+      display: none;
+    }
+
+    .loading.active {
+      display: inline-block;
+    }
+
+    .bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 60;
+      background: #111315;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    .bottom-nav-item {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      text-decoration: none;
+      color: #9aa3ad;
+      padding: 0.55rem 0.1rem 0.35rem;
+    }
+
+    .bottom-nav-item i {
+      font-size: 2.15rem;
+      color: inherit;
+    }
+
+    .bottom-nav-item span {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: inherit;
+      white-space: nowrap;
+    }
+
+    .bottom-nav-item.active {
+      color: #23d66f;
+    }
+
+    .bottom-nav-item.active span {
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-[color:var(--text-light)]">
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="https://videos.pexels.com/video-files/6216964/6216964-hd_1920_1080_30fps.mp4" type="video/mp4" />
+    <source src="https://videos.pexels.com/video-files/6217331/6217331-hd_1080_1920_30fps.mp4" type="video/mp4" />
+  </video>
+  <div class="video-overlay" aria-hidden="true"></div>
+
+  <main class="mx-auto max-w-2xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10 pb-28 sm:pb-32 md:pb-32">
+    <header class="glass-card mb-8 rounded-3xl p-4 sm:p-5 md:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="rounded-2xl bg-white/85 p-2 shadow-inner ring-1 ring-white/80">
+            <img src="{{ url_for('static', filename='img/logo-pro-saude.png') }}" alt="Logo Pro Saude" class="h-14 w-auto rounded-lg object-contain" />
+          </div>
+          <div class="min-w-0">
+            <h1 class="brand-title text-3xl font-black text-white sm:text-4xl">Meu Perfil</h1>
+            <p class="text-sm text-slate-100/90">Gerencie suas informações e foto</p>
+          </div>
+        </div>
+        <a href="{{ url_for('index') }}" class="glass-card rounded-xl px-3 py-2 text-sm font-semibold text-white">Voltar</a>
+      </div>
+    </header>
+
+    {# Alertas #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="glass-card mb-4 rounded-2xl p-4 {% if category == 'error' %}border-l-4 border-red-500{% elif category == 'success' %}border-l-4 border-green-500{% else %}border-l-4 border-yellow-500{% endif %}">
+            <p class="text-white">{{ message }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {# Informações do Perfil #}
+    <section class="glass-card mb-8 rounded-3xl p-5 md:p-6">
+      <h2 class="mb-6 text-2xl font-bold text-white">Informações Básicas</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="text-sm text-slate-300">Nome</label>
+          <input 
+            type="text" 
+            value="{{ user.nome }}" 
+            disabled 
+            class="input-premium mt-1 cursor-not-allowed opacity-75" 
+          />
+        </div>
+        
+        <div>
+          <label class="text-sm text-slate-300">Email</label>
+          <input 
+            type="email" 
+            value="{{ user.email }}" 
+            disabled 
+            class="input-premium mt-1 cursor-not-allowed opacity-75" 
+          />
+        </div>
+      </div>
+    </section>
+
+    {# Seção de Foto #}
+    <section class="glass-card rounded-3xl p-5 md:p-6">
+      <h2 class="mb-6 text-2xl font-bold text-white">Sua Foto</h2>
+      
+      {# Preview da Foto Atual #}
+      <div class="mb-8 flex flex-col items-center gap-4">
+        {% if user.foto_path %}
+          <div class="relative">
+            <img 
+              src="{{ url_for('servir_foto', filename=user.foto_path.split('/')[-1]) }}" 
+              alt="Sua foto" 
+              class="profile-photo"
+              id="profilePhoto"
+            />
+            <div class="absolute -bottom-2 -right-2 rounded-full bg-green-500 px-2 py-1 text-xs font-bold text-white">
+              ✓ Foto salva
+            </div>
+          </div>
+          <p class="text-sm text-slate-300">Sua foto atual</p>
+        {% else %}
+          <div class="photo-placeholder">
+            <span>👤</span>
+          </div>
+          <p class="text-sm text-slate-300">Nenhuma foto ainda</p>
+        {% endif %}
+      </div>
+
+      {# Área de Upload #}
+      <div 
+        class="upload-area" 
+        id="uploadArea"
+        onclick="document.getElementById('fileInput').click()"
+      >
+        <div class="mb-3 text-4xl">📸</div>
+        <p class="mb-2 text-sm text-slate-100">
+          <strong>Clique aqui</strong> ou arraste uma foto para fazer upload
+        </p>
+        <p class="text-xs text-slate-400">
+          Formatos suportados: JPG, PNG, WEBP (Máximo 5 MB)
+        </p>
+      </div>
+
+      {# Input File Oculto #}
+      <input 
+        type="file" 
+        id="fileInput" 
+        accept="image/jpeg,image/png,image/webp"
+        />
+      
+      {# Opções de Captura #}
+      <div class="mt-6 grid gap-3 sm:grid-cols-2">
+        <button 
+          type="button" 
+          class="btn-secondary flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white"
+          id="cameraBtn"
+        >
+          📷 Tirar Foto
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn-orange flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white"
+          id="galleryBtn"
+        >
+          🖼️ Abrir Galeria
+        </button>
+      </div>
+
+      {# Input de Câmera Oculto #}
+      <input 
+        type="file" 
+        id="cameraInput" 
+        accept="image/*"
+        capture="environment"
+        style="display: none;"
+      />
+
+      {# Indicador de Carregamento #}
+      <div class="loading mt-4 flex items-center justify-center gap-2" id="loadingIndicator">
+        <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-500 border-t-transparent"></div>
+        <span class="text-sm text-slate-300">Salvando foto...</span>
+      </div>
+
+      {# Mensagem de Sucesso #}
+      <div id="successMessage" style="display: none;" class="mt-4 rounded-lg border-l-4 border-green-500 bg-green-500/10 p-3">
+        <p class="text-sm text-green-300">✓ Foto salva com sucesso!</p>
+      </div>
+
+      {# Mensagem de Erro #}
+      <div id="errorMessage" style="display: none;" class="mt-4 rounded-lg border-l-4 border-red-500 bg-red-500/10 p-3">
+        <p class="text-sm text-red-300" id="errorText"></p>
+      </div>
+    </section>
+
+    {# Info sobre Foto Opcional #}
+    <div class="glass-card mt-8 rounded-2xl p-4">
+      <p class="text-sm text-slate-300">
+        <strong>ℹ️ Informação:</strong> Sua foto é completamente opcional! Se você não quiser adicionar uma foto, não tem problema. Ela aparecerá no ranking de forma anônima.
+      </p>
+    </div>
+  <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div></main>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const cameraInput = document.getElementById('cameraInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const galleryBtn = document.getElementById('galleryBtn');
+    const profilePhoto = document.getElementById('profilePhoto');
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect();
+      }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', handleFileSelect);
+    cameraInput.addEventListener('change', handleFileSelect);
+
+    // Botões
+    cameraBtn.addEventListener('click', () => {
+      cameraInput.click();
+    });
+
+    galleryBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    function handleFileSelect() {
+      const file = fileInput.files[0] || cameraInput.files[0];
+      if (!file) return;
+
+      // Validações
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        showError('Tipo de arquivo não permitido. Use JPG, PNG ou WEBP.');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        showError('Arquivo muito grande. Máximo de 5 MB.');
+        return;
+      }
+
+      uploadFile(file);
+    }
+
+    function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('foto', file);
+
+      loadingIndicator.classList.add('active');
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+
+      fetch('{{ url_for("upload_foto") }}', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.error || 'Erro ao salvar foto');
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        loadingIndicator.classList.remove('active');
+        showSuccess('Foto salva com sucesso!');
+        
+        // Atualizar preview
+        if (profilePhoto) {
+          const timestamp = new Date().getTime();
+          profilePhoto.src = `{{ url_for('servir_foto', filename='PLACEHOLDER') }}`.replace('PLACEHOLDER', data.foto_path.split('/').pop()) + '?t=' + timestamp;
+        }
+        
+        // Limpar inputs
+        fileInput.value = '';
+        cameraInput.value = '';
+        
+        // Recarregar a página após 2 segundos para mostrar tudo atualizado
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      })
+      .catch(error => {
+        loadingIndicator.classList.remove('active');
+        showError(error.message || 'Erro ao salvar foto');
+        fileInput.value = '';
+        cameraInput.value = '';
+      });
+    }
+
+    function showError(message) {
+      errorText.textContent = message;
+      errorMessage.style.display = 'block';
+      successMessage.style.display = 'none';
+      loadingIndicator.classList.remove('active');
+    }
+
+    function showSuccess(message) {
+      successMessage.style.display = 'block';
+      errorMessage.style.display = 'none';
+    }
+  </script>
+
+  <nav class="bottom-nav" aria-label="Navegacao inferior">
+    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-house"></i>
+      <span>Gym</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-trophy"></i>
+      <span>Ranking</span>
+    </a>
+    <a class="bottom-nav-item" href="{{ url_for('index') }}#feedAulas">
+      <i class="fa-solid fa-camera"></i>
+      <span>Feed</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-mouse"></i>
+      <span>Rats</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'admin' %}active{% endif %}" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-bars"></i>
+      <span>Menu</span>
+    </a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rats - Desafios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --brand-orange: #ef7b2a;
+      --brand-blue: #1f4f7a;
+      --text-light: #f8fafc;
+      --input-bg: rgba(0, 0, 0, 0.2);
+      --input-border: rgba(255, 255, 255, 0.2);
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+
+    body { font-family: "Inter", sans-serif; background: #04070d; }
+
+    .video-bg { position: fixed; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+    .video-overlay { position: fixed; inset: 0; z-index: -1; background: rgba(0,0,0,0.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    .brand-title { letter-spacing: 0.01em; text-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+
+    .btn-orange {
+      background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 10px 24px rgba(224,100,26,0.35);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+    .btn-orange:hover { transform: translateY(-1px); filter: saturate(1.08) brightness(1.02); }
+
+    .input-premium {
+      width: 100%; border-radius: 0.9rem; border: 1px solid var(--input-border);
+      background: var(--input-bg); color: #fff; padding: 0.72rem 0.88rem; outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+    .input-premium:focus { border-color: rgba(76,154,255,0.95); box-shadow: 0 0 0 3px rgba(66,133,244,0.18), 0 0 22px rgba(66,133,244,0.4); }
+
+    .select-premium {
+      width: 100%; border-radius: 0.9rem; border: 1px solid var(--input-border);
+      background: var(--input-bg); color: #fff; padding: 0.72rem 0.88rem; outline: none;
+      appearance: none; -webkit-appearance: none;
+    }
+
+    .status-aberto { color: #fbbf24; }
+    .status-aceito { color: #60a5fa; }
+    .status-concluido { color: #34d399; }
+    .status-cancelado { color: #f87171; }
+
+    .chip { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .chip-tempo { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .chip-repeticoes { background: rgba(96,165,250,0.2); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
+    .chip-distancia { background: rgba(52,211,153,0.2); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+    .chip-livre { background: rgba(192,132,252,0.2); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); }
+
+    .tab-btn { padding: 0.5rem 1rem; border-radius: 0.75rem; font-size: 0.85rem; font-weight: 600; transition: all 150ms ease; color: #9aa3ad; }
+    .tab-btn.active { background: rgba(255,255,255,0.12); color: #fff; }
+
+    .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 60; background: #111315; border-top: 1px solid rgba(255,255,255,0.08); padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom)); align-items: center; justify-content: space-around; }
+    .bottom-nav-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.45rem; text-decoration: none; color: #9aa3ad; padding: 0.55rem 0.1rem 0.35rem; }
+    .bottom-nav-item i { font-size: 2.15rem; color: inherit; }
+    .bottom-nav-item span { font-size: 0.86rem; font-weight: 500; color: inherit; white-space: nowrap; }
+    .bottom-nav-item.active { color: #23d66f; }
+    .bottom-nav-item.active span { font-weight: 700; }
+  </style>
+</head>
+<body class="min-h-screen text-[color:var(--text-light)]">
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="https://videos.pexels.com/video-files/6216964/6216964-hd_1920_1080_30fps.mp4" type="video/mp4" />
+    <source src="https://videos.pexels.com/video-files/6217331/6217331-hd_1080_1920_30fps.mp4" type="video/mp4" />
+  </video>
+  <div class="video-overlay" aria-hidden="true"></div>
+
+  <main class="mx-auto max-w-3xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10 pb-28 sm:pb-32 md:pb-32">
+    <div id="toastContainer" class="pointer-events-none fixed right-2 top-2 z-50 space-y-2 sm:right-4 sm:top-4"></div>
+
+    <header class="glass-card mb-6 rounded-3xl p-4 sm:p-5 md:p-6">
+      <div class="flex items-center gap-4">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 text-3xl shadow-lg">
+          <i class="fa-solid fa-mouse"></i>
+        </div>
+        <div>
+          <h1 class="brand-title text-3xl font-black text-white sm:text-4xl">Rats</h1>
+          <p class="text-sm text-slate-100/90">Crie desafios e desafie outros atletas!</p>
+        </div>
+      </div>
+    </header>
+
+    {# ── Criar novo desafio ── #}
+    <section id="criarSection" class="glass-card mb-6 rounded-3xl p-5">
+      <h2 class="brand-title mb-4 text-xl font-bold text-white"><i class="fa-solid fa-bolt mr-2 text-orange-400"></i>Criar Desafio</h2>
+      <div class="space-y-3">
+        <input id="dTitulo" class="input-premium" placeholder="Titulo do desafio (ex: 100 flexoes em 5 min)" maxlength="120" />
+        <textarea id="dDescricao" class="input-premium" rows="2" placeholder="Descreva as regras do desafio..." maxlength="500"></textarea>
+        <div class="grid grid-cols-2 gap-3">
+          <select id="dTipo" class="select-premium">
+            <option value="">Tipo...</option>
+            <option value="tempo">Tempo</option>
+            <option value="repeticoes">Repeticoes</option>
+            <option value="distancia">Distancia</option>
+            <option value="livre">Livre</option>
+          </select>
+          <input id="dMeta" class="input-premium" placeholder="Meta (ex: 5 min, 100 reps)" maxlength="120" />
+        </div>
+        <button id="btnCriar" class="btn-orange w-full rounded-xl px-4 py-3 font-bold text-white">
+          <i class="fa-solid fa-plus mr-1"></i> Lancar Desafio
+        </button>
+      </div>
+    </section>
+
+    {# ── Filtros / Tabs ── #}
+    <div class="mb-4 flex gap-2 overflow-x-auto">
+      <button class="tab-btn active" data-tab="todos">Todos</button>
+      <button class="tab-btn" data-tab="abertos">Abertos</button>
+      <button class="tab-btn" data-tab="meus">Meus</button>
+      <button class="tab-btn" data-tab="aceitos">Em Andamento</button>
+      <button class="tab-btn" data-tab="concluidos">Concluidos</button>
+    </div>
+
+    {# ── Lista de desafios ── #}
+    <div id="desafiosList" class="space-y-4">
+      <div class="glass-card rounded-2xl p-4 text-center text-sm text-slate-300">Carregando desafios...</div>
+    </div>
+
+    <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Navegacao inferior">
+    <a class="bottom-nav-item" href="{{ url_for('index') }}#gymSection">
+      <i class="fa-solid fa-house"></i>
+      <span>Gym</span>
+    </a>
+    <a class="bottom-nav-item" href="{{ url_for('ranking') }}">
+      <i class="fa-solid fa-trophy"></i>
+      <span>Ranking</span>
+    </a>
+    <a class="bottom-nav-item" href="{{ url_for('index') }}#feedAulas">
+      <i class="fa-solid fa-camera"></i>
+      <span>Feed</span>
+    </a>
+    <a class="bottom-nav-item active" href="{{ url_for('rats') }}" aria-current="page">
+      <i class="fa-solid fa-mouse"></i>
+      <span>Rats</span>
+    </a>
+    <a class="bottom-nav-item" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}">
+      <i class="fa-solid fa-bars"></i>
+      <span>Menu</span>
+    </a>
+  </nav>
+
+  <script>
+    const USER_ID = {{ user.id }};
+    let allDesafios = [];
+    let currentTab = 'todos';
+
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toastContainer');
+      if (!c) return;
+      const t = document.createElement('div');
+      t.className = `pointer-events-auto rounded-xl px-4 py-3 text-sm font-bold shadow-lg ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 2600);
+    }
+
+    function chipClass(tipo) {
+      return { tempo: 'chip-tempo', repeticoes: 'chip-repeticoes', distancia: 'chip-distancia', livre: 'chip-livre' }[tipo] || 'chip-livre';
+    }
+
+    function statusLabel(s) {
+      return { aberto: 'Aberto', aceito: 'Em Andamento', concluido: 'Concluido', cancelado: 'Cancelado' }[s] || s;
+    }
+
+    function statusClass(s) {
+      return `status-${s}`;
+    }
+
+    function filtrar(desafios) {
+      if (currentTab === 'todos') return desafios.filter(d => d.status !== 'cancelado');
+      if (currentTab === 'abertos') return desafios.filter(d => d.status === 'aberto');
+      if (currentTab === 'meus') return desafios.filter(d => d.is_mine);
+      if (currentTab === 'aceitos') return desafios.filter(d => d.status === 'aceito');
+      if (currentTab === 'concluidos') return desafios.filter(d => d.status === 'concluido');
+      return desafios;
+    }
+
+    function renderDesafios() {
+      const container = document.getElementById('desafiosList');
+      const lista = filtrar(allDesafios);
+
+      if (lista.length === 0) {
+        container.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center"><p class="text-slate-300 text-sm">Nenhum desafio encontrado.</p><p class="text-slate-400 text-xs mt-1">Seja o primeiro a lancar um!</p></div>';
+        return;
+      }
+
+      container.innerHTML = lista.map(d => {
+        const isMine = d.criador.id === USER_ID;
+        const isOponente = d.oponente && d.oponente.id === USER_ID;
+        const isParticipante = isMine || isOponente;
+
+        let actions = '';
+
+        if (d.status === 'aberto' && !isMine) {
+          actions = `<button onclick="aceitarDesafio(${d.id})" class="btn-orange mt-3 w-full rounded-xl px-3 py-2 text-sm font-bold text-white"><i class="fa-solid fa-handshake mr-1"></i> Aceitar Desafio</button>`;
+        }
+
+        if (d.status === 'aberto' && isMine) {
+          actions = `<button onclick="cancelarDesafio(${d.id})" class="mt-3 w-full rounded-xl border border-rose-500/40 bg-rose-600/20 px-3 py-2 text-sm font-bold text-rose-300 hover:bg-rose-600/40"><i class="fa-solid fa-xmark mr-1"></i> Cancelar</button>`;
+        }
+
+        if (d.status === 'aceito' && isParticipante) {
+          const meuResultado = isMine ? d.resultado_criador : d.resultado_oponente;
+          if (!meuResultado) {
+            actions = `
+              <div class="mt-3 flex gap-2">
+                <input id="res-${d.id}" class="input-premium flex-1" placeholder="Seu resultado..." />
+                <button onclick="enviarResultado(${d.id})" class="btn-orange rounded-xl px-4 py-2 text-sm font-bold text-white">Enviar</button>
+              </div>`;
+          } else {
+            actions = `<p class="mt-3 text-xs text-emerald-400"><i class="fa-solid fa-check mr-1"></i> Você já registrou: ${meuResultado}</p>`;
+          }
+        }
+
+        if (d.status === 'concluido' && isParticipante && !d.vencedor) {
+          actions = `
+            <div class="mt-3 space-y-2">
+              <p class="text-xs text-slate-300">Quem venceu?</p>
+              <div class="flex gap-2">
+                <button onclick="definirVencedor(${d.id}, ${d.criador.id})" class="flex-1 rounded-xl border border-emerald-500/40 bg-emerald-600/20 px-3 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-600/40">${d.criador.nome}</button>
+                <button onclick="definirVencedor(${d.id}, ${d.oponente.id})" class="flex-1 rounded-xl border border-blue-500/40 bg-blue-600/20 px-3 py-2 text-sm font-bold text-blue-300 hover:bg-blue-600/40">${d.oponente.nome}</button>
+              </div>
+            </div>`;
+        }
+
+        const vencedorBadge = d.vencedor
+          ? `<div class="mt-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 px-3 py-2 text-center"><i class="fa-solid fa-crown text-yellow-400 mr-1"></i><span class="text-sm font-bold text-emerald-300">Vencedor: ${d.vencedor.nome}</span></div>`
+          : '';
+
+        const resultados = (d.resultado_criador || d.resultado_oponente)
+          ? `<div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded-lg bg-black/20 p-2"><span class="text-slate-400">${d.criador.nome}:</span><br><span class="font-bold text-white">${d.resultado_criador || 'Pendente...'}</span></div>
+              <div class="rounded-lg bg-black/20 p-2"><span class="text-slate-400">${d.oponente ? d.oponente.nome : '???'}:</span><br><span class="font-bold text-white">${d.resultado_oponente || 'Pendente...'}</span></div>
+            </div>`
+          : '';
+
+        return `
+          <article class="glass-card rounded-2xl p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="mb-1 flex flex-wrap items-center gap-2">
+                  <span class="chip ${chipClass(d.tipo)}">${d.tipo}</span>
+                  <span class="text-xs font-semibold ${statusClass(d.status)}">${statusLabel(d.status)}</span>
+                </div>
+                <h3 class="text-lg font-bold text-white">${d.titulo}</h3>
+                <p class="mt-1 text-sm text-slate-300">${d.descricao}</p>
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+              <span><i class="fa-solid fa-bullseye mr-1 text-orange-400"></i>Meta: <strong class="text-white">${d.meta}</strong></span>
+              <span><i class="fa-solid fa-user mr-1"></i>${d.criador.nome}</span>
+              ${d.oponente ? `<span><i class="fa-solid fa-user-check mr-1 text-blue-400"></i>${d.oponente.nome}</span>` : '<span class="text-yellow-400"><i class="fa-solid fa-hourglass mr-1"></i>Esperando oponente</span>'}
+              <span><i class="fa-regular fa-clock mr-1"></i>${d.criado_em}</span>
+            </div>
+            ${resultados}
+            ${vencedorBadge}
+            ${actions}
+          </article>`;
+      }).join('');
+    }
+
+    async function carregarDesafios() {
+      try {
+        const r = await fetch('/api/rats/desafios');
+        allDesafios = await r.json();
+        renderDesafios();
+      } catch (e) {
+        document.getElementById('desafiosList').innerHTML = '<div class="glass-card rounded-2xl p-4 text-center text-sm text-rose-300">Erro ao carregar desafios.</div>';
+      }
+    }
+
+    async function criarDesafio() {
+      const titulo = document.getElementById('dTitulo').value.trim();
+      const descricao = document.getElementById('dDescricao').value.trim();
+      const tipo = document.getElementById('dTipo').value;
+      const meta = document.getElementById('dMeta').value.trim();
+
+      if (!titulo || !descricao || !tipo || !meta) {
+        showToast('Preencha todos os campos.', 'error');
+        return;
+      }
+
+      const r = await fetch('/api/rats/desafios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, descricao, tipo, meta })
+      });
+      const data = await r.json();
+      if (!r.ok) { showToast(data.error, 'error'); return; }
+      showToast(data.message);
+      document.getElementById('dTitulo').value = '';
+      document.getElementById('dDescricao').value = '';
+      document.getElementById('dTipo').value = '';
+      document.getElementById('dMeta').value = '';
+      carregarDesafios();
+    }
+
+    async function aceitarDesafio(id) {
+      if (!confirm('Aceitar este desafio?')) return;
+      const r = await fetch(`/api/rats/desafios/${id}/aceitar`, { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok) { showToast(data.error, 'error'); return; }
+      showToast(data.message);
+      carregarDesafios();
+    }
+
+    async function enviarResultado(id) {
+      const input = document.getElementById(`res-${id}`);
+      const resultado = input ? input.value.trim() : '';
+      if (!resultado) { showToast('Informe seu resultado.', 'error'); return; }
+      const r = await fetch(`/api/rats/desafios/${id}/resultado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resultado })
+      });
+      const data = await r.json();
+      if (!r.ok) { showToast(data.error, 'error'); return; }
+      showToast(data.message);
+      carregarDesafios();
+    }
+
+    async function definirVencedor(id, vencedorId) {
+      if (!confirm('Confirmar vencedor?')) return;
+      const r = await fetch(`/api/rats/desafios/${id}/vencedor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vencedor_id: vencedorId })
+      });
+      const data = await r.json();
+      if (!r.ok) { showToast(data.error, 'error'); return; }
+      showToast(data.message);
+      carregarDesafios();
+    }
+
+    async function cancelarDesafio(id) {
+      if (!confirm('Cancelar este desafio?')) return;
+      const r = await fetch(`/api/rats/desafios/${id}/cancelar`, { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok) { showToast(data.error, 'error'); return; }
+      showToast(data.message);
+      carregarDesafios();
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        renderDesafios();
+      });
+    });
+
+    document.getElementById('btnCriar').addEventListener('click', criarDesafio);
+    carregarDesafios();
+  </script>
+</body>
+</html>

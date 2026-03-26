@@ -1,0 +1,173 @@
+.gym-view-root {
+  min-height: 360px;
+}
+
+.gym-card {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.28);
+  padding: 1rem;
+}
+
+.gym-title {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.gym-subtitle {
+  color: #cbd5e1;
+  font-size: 0.92rem;
+}
+
+.gym-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  color: #cbd5e1;
+  margin-top: 0.85rem;
+}
+
+.gym-summary {
+  margin-top: 0.9rem;
+  border-left: 4px solid #34d399;
+  background: rgba(16, 185, 129, 0.14);
+  color: #d1fae5;
+  border-radius: 0.65rem;
+  padding: 0.8rem;
+}
+
+.gym-activity-area {
+  position: relative;
+  margin-top: 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  min-height: 280px;
+}
+
+.gym-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gym-hotspot {
+  position: absolute;
+  border: 0;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.gym-hotspot:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.gym-hotspot--court-a,
+.gym-hotspot--court-b {
+  left: 0;
+  width: 100%;
+  height: 50%;
+}
+
+.gym-hotspot--court-a {
+  top: 0;
+}
+
+.gym-hotspot--court-b {
+  bottom: 0;
+}
+
+.gym-hotspot--ocean,
+.gym-hotspot--functional {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.gym-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.gym-modal.is-open {
+  display: flex;
+}
+
+.gym-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+}
+
+.gym-modal-panel {
+  position: relative;
+  width: min(760px, 96vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.92);
+  padding: 1rem;
+}
+
+.gym-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.gym-grid-2 {
+  grid-template-columns: 1fr;
+}
+
+.gym-label {
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  margin-bottom: 0.24rem;
+  display: block;
+}
+
+.gym-input,
+.gym-select,
+.gym-button,
+.gym-button-secondary {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(2, 6, 23, 0.46);
+  color: #ffffff;
+  padding: 0.62rem 0.74rem;
+  outline: none;
+}
+
+.gym-select option {
+  color: #0f172a;
+}
+
+.gym-button {
+  background: linear-gradient(165deg, #eb6f21 0%, #ff9446 100%);
+  border-color: rgba(255, 255, 255, 0.35);
+  font-weight: 700;
+}
+
+.gym-button-secondary {
+  background: rgba(148, 163, 184, 0.22);
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .gym-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}

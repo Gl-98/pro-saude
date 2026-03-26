@@ -9,6 +9,9 @@ __pycache__/
 # Banco local (em produção usar Postgres no Render)
 app.db
 
+# Uploads locais (filesystem efêmero no Render)
+uploads/
+
 # VS Code
 .vscode/
 

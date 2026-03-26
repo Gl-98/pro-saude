@@ -8,7 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='gym.css') }}" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{{ url_for('static', filename='gym-view-manager.js') }}" defer></script>
   <style>
     :root {
       --brand-orange: #ef7b2a;
@@ -70,7 +73,6 @@
     .input-premium::placeholder {
       color: rgba(226, 232, 240, 0.72);
     }
-
     .input-premium:focus {
       border-color: rgba(76, 154, 255, 0.95);
       box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18), 0 0 22px rgba(66, 133, 244, 0.4);
@@ -121,6 +123,61 @@
         -webkit-backdrop-filter: blur(3px);
       }
     }
+
+    /* Bottom navigation (hidden by default; toggle with JS adding .is-visible) */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 60;
+      background: #111315;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    .bottom-nav.is-visible {
+      display: flex;
+    }
+
+    .bottom-nav-item {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      text-decoration: none;
+      color: #9aa3ad;
+      padding: 0.55rem 0.1rem 0.35rem;
+      transition: color 160ms ease;
+    }
+
+    .bottom-nav-item i {
+      font-size: 2.15rem;
+      line-height: 1;
+      color: inherit;
+    }
+
+    .bottom-nav-item span {
+      font-size: 0.86rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: inherit;
+      white-space: nowrap;
+    }
+
+    .bottom-nav-item.active {
+      color: #23d66f;
+    }
+
+    .bottom-nav-item.active span {
+      font-weight: 700;
+    }
   </style>
 </head>
 <body class="min-h-screen text-[color:var(--text-light)]">
@@ -131,7 +188,7 @@
   </video>
   <div class="video-overlay" aria-hidden="true"></div>
 
-  <main class="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10">
+  <main class="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10 pb-28 sm:pb-32 md:pb-32">
     <div id="toastContainer" class="pointer-events-none fixed right-2 top-2 z-50 space-y-2 sm:right-4 sm:top-4"></div>
 
     <header class="glass-card mb-8 overflow-hidden rounded-3xl p-4 sm:p-5 md:mb-10 md:p-6">
@@ -154,6 +211,7 @@
         </div>
         {% if user %}
           <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
+            <a href="{{ url_for('rats') }}" class="rounded-xl bg-slate-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Perfil</a>
             <a href="{{ url_for('ranking') }}" class="rounded-xl bg-amber-500/90 px-3 py-2 text-sm font-semibold text-white shadow">Ranking</a>
             {% if user.is_admin %}
               <a href="{{ url_for('admin') }}" class="rounded-xl bg-[color:var(--brand-blue)] px-3 py-2 text-sm font-semibold text-white shadow">Painel Admin</a>
@@ -237,6 +295,12 @@
         </div>
       </section>
 
+      <section id="gymSection" class="glass-card mb-8 mt-8 rounded-3xl p-5 md:p-6">
+        <h2 class="brand-title mb-4 text-2xl font-bold text-white sm:text-3xl">Gym</h2>
+        <p class="mb-4 text-sm text-slate-200">A área Gym muda conforme sua modalidade de check-in.</p>
+        <div id="gymViewRoot" data-user-id="{{ user.id }}" class="gym-view-root"></div>
+      </section>
+
       <section id="minhaAulaBox" class="glass-card mt-9 hidden rounded-3xl p-6">
         <h3 class="brand-title mb-1 text-2xl font-black text-white sm:text-3xl">Minha Aula de Hoje</h3>
         <p id="metaAula" class="mb-5 text-sm text-slate-200"></p>
@@ -251,6 +315,32 @@
           </article>
         </div>
       </section>
+
+      <script>
+        function handleLogoError(img) {
+          img.classList.add('hidden');
+          const fallback = img.nextElementSibling;
+          if (fallback) fallback.classList.remove('hidden');
+        }
+
+        function showToast(message, type = 'success') {
+          const container = document.getElementById('toastContainer');
+          if (!container) return;
+          const toast = document.createElement('div');
+          toast.className = `pointer-events-auto rounded-xl px-4 py-3 text-sm font-bold shadow-lg ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
+          toast.textContent = message;
+          container.appendChild(toast);
+          setTimeout(() => { toast.remove(); }, 2600);
+        }
+
+        function abrirModalSenha() {
+          document.getElementById('modalSenha').classList.remove('hidden');
+        }
+
+        function fecharModalSenha() {
+          document.getElementById('modalSenha').classList.add('hidden');
+        }
+      </script>
 
       <script>
         function modalidadeBadge(modalidade) {
@@ -340,6 +430,7 @@
 
               await carregarAulas();
               await carregarMinhaAula();
+              if (typeof window.refreshGymView === 'function') window.refreshGymView();
             });
           });
         }
@@ -376,36 +467,30 @@
       </script>
     {% endif %}
 
-    <script>
-      function handleLogoError(img) {
-        img.classList.add('hidden');
-        const fallback = img.nextElementSibling;
-        if (fallback) fallback.classList.remove('hidden');
-      }
-
-      function showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = `pointer-events-auto rounded-xl px-4 py-3 text-sm font-bold shadow-lg ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        setTimeout(() => {
-          toast.remove();
-        }, 2600);
-      }
-
-      function abrirModalSenha() {
-        document.getElementById('modalSenha').classList.remove('hidden');
-      }
-
-      function fecharModalSenha() {
-        document.getElementById('modalSenha').classList.add('hidden');
-      }
-    </script>
     <script src="{{ url_for('static', filename='splash-screen.js') }}"></script>
-  </main>
+  <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div></main>
+
+  <nav class="bottom-nav {% if user %}is-visible{% endif %}" aria-label="Navegacao inferior">
+    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-house"></i>
+      <span>Gym</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-trophy"></i>
+      <span>Ranking</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#feedAulas">
+      <i class="fa-solid fa-camera"></i>
+      <span>Feed</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-mouse"></i>
+      <span>Rats</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'admin' %}active{% endif %}" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-bars"></i>
+      <span>Menu</span>
+    </a>
+  </nav>
 </body>
 </html>

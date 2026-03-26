@@ -7,8 +7,57 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='ranking.css') }}" />
+  <style>
+    .bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 60;
+      background: #111315;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
+        gap: 0.45rem;
+      justify-content: space-around;
+    }
+        padding: 0.55rem 0.1rem 0.35rem;
+    .bottom-nav-item {
+      flex: 1;
+      min-width: 0;
+        font-size: 2.15rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+        font-size: 0.86rem;
+        font-weight: 500;
+      padding: 0.3rem 0.1rem;
+    }
+
+    .bottom-nav-item i {
+      font-size: 1.08rem;
+      color: inherit;
+    }
+
+      .bottom-nav-item.active span {
+        font-weight: 700;
+      }
+
+    .bottom-nav-item span {
+        <i class="fa-solid fa-house"></i>
+      font-weight: 600;
+      color: inherit;
+      white-space: nowrap;
+        <i class="fa-solid fa-trophy"></i>
+
+    .bottom-nav-item.active {
+      color: #23d66f;
+        <i class="fa-solid fa-camera"></i>
+  </style>
 </head>
 <body class="min-h-screen text-[color:var(--text-light)]">
   <video class="video-bg" autoplay muted loop playsinline>
@@ -17,7 +66,7 @@
   </video>
   <div class="video-overlay" aria-hidden="true"></div>
 
-  <main class="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10">
+  <main class="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 md:px-8 md:py-10 pb-28 sm:pb-32 md:pb-32">
     <header class="glass-card mb-8 rounded-3xl p-4 sm:p-5 md:p-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
@@ -59,10 +108,30 @@
             <article class="podium-card {% if posicao == 1 %}podium-card--first{% elif posicao == 2 %}podium-card--second{% else %}podium-card--third{% endif %}">
               <div class="podium-place">{{ posicao }}º</div>
               {% if atleta %}
+                {% if atleta.foto_path %}
+                  <div class="mb-3 flex justify-center">
+                    <img 
+                      src="{{ url_for('servir_foto', filename=atleta.foto_path.split('/')[-1]) }}" 
+                      alt="{{ atleta.nome }}" 
+                      class="h-20 w-20 rounded-full border-2 border-white/40 object-cover"
+                    />
+                  </div>
+                {% else %}
+                  <div class="mb-3 flex justify-center">
+                    <div class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10">
+                      <span class="text-2xl">👤</span>
+                    </div>
+                  </div>
+                {% endif %}
                 <h3 class="text-lg font-black text-white">{{ atleta.nome }}</h3>
                 <p class="text-sm text-slate-200">{{ atleta.pontos }} pts</p>
                 <p class="text-xs text-slate-300">{{ atleta.presencas }} presença(s)</p>
               {% else %}
+                <div class="mb-3 flex justify-center">
+                  <div class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-white/20 bg-white/5">
+                    <span class="text-xl text-slate-400">?</span>
+                  </div>
+                </div>
                 <h3 class="text-lg font-black text-slate-300">---</h3>
                 <p class="text-sm text-slate-400">0 pts</p>
               {% endif %}
@@ -80,8 +149,19 @@
         <div class="space-y-3">
           {% for item in restante %}
             <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/20 bg-black/25 p-4">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-4">
                 <span class="rounded-lg bg-white/10 px-2 py-1 text-sm font-bold text-white">#{{ item.posicao }}</span>
+                {% if item.foto_path %}
+                  <img 
+                    src="{{ url_for('servir_foto', filename=item.foto_path.split('/')[-1]) }}" 
+                    alt="{{ item.nome }}" 
+                    class="h-12 w-12 rounded-full border border-white/20 object-cover"
+                  />
+                {% else %}
+                  <div class="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/5">
+                    <span>👤</span>
+                  </div>
+                {% endif %}
                 <div>
                   <p class="font-bold text-white">{{ item.nome }}</p>
                   <p class="text-xs text-slate-300">{{ item.email }}</p>
@@ -102,6 +182,29 @@
         <p class="text-sm text-slate-200">Sem dados de pontuação ainda.</p>
       {% endif %}
     </section>
-  </main>
+  <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div></main>
+
+  <nav class="bottom-nav" aria-label="Navegacao inferior">
+    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-house"></i>
+      <span>Gym</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-trophy"></i>
+      <span>Ranking</span>
+    </a>
+    <a class="bottom-nav-item" href="{{ url_for('index') }}#feedAulas">
+      <i class="fa-solid fa-camera"></i>
+      <span>Feed</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-mouse"></i>
+      <span>Rats</span>
+    </a>
+    <a class="bottom-nav-item {% if request.endpoint == 'admin' %}active{% endif %}" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>
+      <i class="fa-solid fa-bars"></i>
+      <span>Menu</span>
+    </a>
+  </nav>
 </body>
 </html>
