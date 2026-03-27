@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feed - Pro Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile-nav.css') }}" />
+  <style>
+    :root {
+      --page-bg: #0b0d10;
+      --panel-bg: #15171c;
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --muted: #9ca3af;
+      --text: #f8fafc;
+      --accent: #1dde8e;
+      --accent-2: #18b874;
+      --chip: #20242a;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", sans-serif;
+      background:
+        radial-gradient(circle at top center, rgba(34, 197, 94, 0.18), transparent 32%),
+        linear-gradient(180deg, #121418 0%, #0b0d10 24%, #090b0e 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: 1rem 0.9rem 7.5rem;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      padding-top: 0.6rem;
+      background: linear-gradient(180deg, rgba(11, 13, 16, 0.96), rgba(11, 13, 16, 0.76), rgba(11, 13, 16, 0));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .search-box,
+    .circle-btn,
+    .story-card,
+    .composer-card,
+    .post-card,
+    .filter-sheet {
+      border: 1px solid var(--panel-border);
+      background: rgba(21, 23, 28, 0.88);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .search-box {
+      height: 4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      border-radius: 1.2rem;
+      padding: 0 1rem;
+    }
+
+    .search-box i,
+    .search-box input::placeholder {
+      color: #8b919b;
+    }
+
+    .search-box input {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .circle-btn {
+      position: relative;
+      width: 4rem;
+      height: 4rem;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d1d5db;
+      text-decoration: none;
+    }
+
+    .circle-btn--accent {
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #04110b;
+      border-color: rgba(29, 222, 142, 0.35);
+    }
+
+    .badge-count {
+      position: absolute;
+      right: -0.2rem;
+      bottom: -0.1rem;
+      min-width: 1.7rem;
+      height: 1.7rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #04110b;
+      font-size: 0.88rem;
+      font-weight: 800;
+      border: 2px solid var(--page-bg);
+    }
+
+    .stories {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      padding: 1.1rem 0.15rem 0.2rem;
+      scrollbar-width: none;
+    }
+
+    .stories::-webkit-scrollbar {
+      display: none;
+    }
+
+    .story-card {
+      flex: 0 0 auto;
+      width: 5.6rem;
+      text-align: center;
+      border-radius: 1.4rem;
+      padding: 0.5rem 0.25rem 0.2rem;
+      background: transparent;
+      box-shadow: none;
+      border-color: transparent;
+    }
+
+    .story-avatar-ring {
+      width: 4.7rem;
+      height: 4.7rem;
+      margin: 0 auto 0.55rem;
+      border-radius: 999px;
+      padding: 0.2rem;
+      background: linear-gradient(135deg, #cbd5e1, #6ee7b7, #1dde8e);
+      position: relative;
+    }
+
+    .story-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      object-fit: cover;
+      display: block;
+      border: 3px solid #14161b;
+      background: #1d232a;
+    }
+
+    .story-avatar-fallback {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: 3px solid #14161b;
+      background: #1d232a;
+    }
+
+    .story-add {
+      position: absolute;
+      right: 0.1rem;
+      bottom: 0.1rem;
+      width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #04110b;
+      font-size: 0.9rem;
+      font-weight: 900;
+      border: 2px solid #14161b;
+    }
+
+    .story-name {
+      font-size: 0.92rem;
+      color: #cdd4de;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .composer-card {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+    }
+
+    .composer-card p {
+      margin: 0;
+    }
+
+    .composer-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .composer-text {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .composer-action {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #04110b;
+      font-weight: 800;
+    }
+
+    .feed-stack {
+      display: grid;
+      gap: 1.1rem;
+      margin-top: 1.2rem;
+    }
+
+    .post-card {
+      overflow: hidden;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      padding: 0;
+      background: rgba(20, 22, 27, 0.96);
+    }
+
+    .post-head {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1rem 1rem 0.8rem;
+    }
+
+    .post-head img,
+    .post-head .avatar-fallback {
+      width: 3.4rem;
+      height: 3.4rem;
+      border-radius: 999px;
+      object-fit: cover;
+      flex: 0 0 auto;
+    }
+
+    .avatar-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #252932;
+      font-size: 1.2rem;
+    }
+
+    .post-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: white;
+      text-decoration: none;
+    }
+
+    .post-meta {
+      margin-top: 0.2rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .post-time {
+      margin-left: auto;
+      color: #8b919b;
+      font-size: 0.82rem;
+      text-align: right;
+    }
+
+    .post-media-wrap {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    }
+
+    .post-media {
+      display: block;
+      width: 100%;
+      max-height: 38rem;
+      object-fit: cover;
+      background: #050607;
+    }
+
+    .post-footer {
+      padding: 1rem 1rem 1.1rem;
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .post-caption {
+      font-size: 0.97rem;
+      line-height: 1.5;
+      color: #e5e7eb;
+    }
+
+    .post-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+    }
+
+    .like-form {
+      margin: 0;
+    }
+
+    .like-btn {
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0;
+      background: transparent;
+      color: white;
+      font-size: 0.98rem;
+      font-weight: 700;
+    }
+
+    .like-btn i {
+      font-size: 2rem;
+      color: #f3f4f6;
+    }
+
+    .like-btn.is-liked i {
+      color: #ff507c;
+    }
+
+    .post-tag {
+      border-radius: 999px;
+      background: rgba(29, 222, 142, 0.12);
+      color: #74f0ba;
+      border: 1px solid rgba(29, 222, 142, 0.18);
+      padding: 0.45rem 0.8rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .empty-feed {
+      margin-top: 1rem;
+      padding: 2rem 1.2rem;
+      border-radius: 1.6rem;
+      text-align: center;
+      color: var(--muted);
+      border: 1px solid var(--panel-border);
+      background: rgba(21, 23, 28, 0.78);
+    }
+
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .sheet-backdrop.is-open {
+      display: block;
+    }
+
+    .filter-sheet,
+    .composer-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 71;
+      margin: 0 auto;
+      width: min(100%, 760px);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-top-left-radius: 1.8rem;
+      border-top-right-radius: 1.8rem;
+      padding: 1.2rem 1rem calc(1.4rem + env(safe-area-inset-bottom));
+      transform: translateY(110%);
+      transition: transform 220ms ease;
+    }
+
+    .sheet-backdrop.is-open .filter-sheet,
+    .sheet-backdrop.is-open .composer-sheet {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 3.4rem;
+      height: 0.35rem;
+      margin: 0 auto 1rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .sheet-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 0.9rem;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .filter-option {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--chip);
+      color: #dbe1ea;
+      border-radius: 1rem;
+      padding: 0.95rem 1rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .filter-option.is-active {
+      border-color: rgba(29, 222, 142, 0.35);
+      background: rgba(29, 222, 142, 0.15);
+      color: #82f2c4;
+    }
+
+    .composer-form {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .composer-form input,
+    .composer-form textarea {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      background: #1d2128;
+      color: white;
+      padding: 0.95rem 1rem;
+      font: inherit;
+      outline: none;
+    }
+
+    .composer-form textarea {
+      min-height: 7.5rem;
+      resize: vertical;
+    }
+
+    .submit-post {
+      border: 0;
+      border-radius: 1rem;
+      padding: 1rem;
+      font-weight: 900;
+      font-size: 1rem;
+      color: #04110b;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      cursor: pointer;
+    }
+
+    .bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 60;
+      background: rgba(10, 12, 16, 0.38);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    .bottom-nav-item {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      text-decoration: none;
+      color: #8f98a3;
+      padding: 0.55rem 0.1rem 0.35rem;
+    }
+
+    .bottom-nav-item i {
+      font-size: 2rem;
+      color: inherit;
+    }
+
+    .bottom-nav-item span {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: inherit;
+      white-space: nowrap;
+    }
+
+    .bottom-nav-item.active {
+      color: var(--accent);
+    }
+
+    .bottom-nav-item.active span {
+      font-weight: 800;
+    }
+
+    @media (min-width: 768px) {
+      .shell {
+        padding-top: 1.4rem;
+      }
+
+      .post-card {
+        border-radius: 1.8rem;
+        border-left: 1px solid var(--panel-border);
+        border-right: 1px solid var(--panel-border);
+      }
+
+      .post-media {
+        max-height: 44rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div class="search-row">
+        <label class="search-box">
+          <i class="fa-solid fa-magnifying-glass text-xl"></i>
+          <input id="feedSearch" type="search" placeholder="Buscar pessoas..." autocomplete="off" />
+        </label>
+
+        <button id="openFilters" type="button" class="circle-btn" aria-label="Abrir filtros do feed">
+          <i class="fa-solid fa-filter text-2xl"></i>
+          <span id="filterCount" class="badge-count">1</span>
+        </button>
+
+        <button id="openComposer" type="button" class="circle-btn circle-btn--accent" aria-label="Criar publicação">
+          <i class="fa-solid fa-plus text-2xl"></i>
+        </button>
+      </div>
+
+      <div class="stories">
+        <div class="story-card">
+          <div class="story-avatar-ring">
+            {% if user.foto_path %}
+              <img class="story-avatar" src="{{ url_for('servir_foto', filename=user.foto_path.split('/')[-1]) }}" alt="Sua foto" />
+            {% else %}
+              <div class="story-avatar-fallback">👤</div>
+            {% endif %}
+            <span class="story-add"><i class="fa-solid fa-plus"></i></span>
+          </div>
+          <div class="story-name">Seu story</div>
+        </div>
+
+        {% for aluno in story_users if aluno.id != user.id %}
+          <a class="story-card text-inherit no-underline" href="{{ url_for('perfil_publico', aluno_id=aluno.id) }}">
+            <div class="story-avatar-ring">
+              {% if aluno.foto_path %}
+                <img class="story-avatar" src="{{ url_for('servir_foto', filename=aluno.foto_path.split('/')[-1]) }}" alt="{{ aluno.nome }}" />
+              {% else %}
+                <div class="story-avatar-fallback">👤</div>
+              {% endif %}
+            </div>
+            <div class="story-name">{{ aluno.nome.split(' ')[0] }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mt-4 grid gap-2">
+          {% for category, message in messages %}
+            <div class="rounded-2xl border px-4 py-3 text-sm font-semibold {% if category == 'error' %}border-rose-500/30 bg-rose-500/10 text-rose-200{% else %}border-emerald-500/30 bg-emerald-500/10 text-emerald-200{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="composer-card">
+      <div>
+        <p class="composer-title">Feed da comunidade</p>
+        <p class="composer-text">Poste foto ou vídeo do seu treino e acompanhe o que a galera está fazendo.</p>
+      </div>
+      <button type="button" id="openComposerInline" class="composer-action">Publicar</button>
+    </section>
+
+    {% if posts %}
+      <section id="feedPosts" class="feed-stack">
+        {% for post in posts %}
+          {% set autor_nome = post.aluno.nome if post.aluno else 'Aluno' %}
+          {% set ja_curtiu = post.curtidas|selectattr('aluno_id', 'equalto', user.id)|list|length > 0 %}
+          <article class="post-card" data-post-type="{{ post.tipo }}" data-search="{{ (autor_nome ~ ' ' ~ (post.legenda or ''))|lower }}" data-post-owner="{{ 'me' if post.aluno_id == user.id else 'other' }}">
+            <div class="post-head">
+              {% if post.aluno and post.aluno.foto_path %}
+                <img src="{{ url_for('servir_foto', filename=post.aluno.foto_path.split('/')[-1]) }}" alt="{{ autor_nome }}" />
+              {% else %}
+                <div class="avatar-fallback">👤</div>
+              {% endif %}
+
+              <div>
+                {% if post.aluno %}
+                  <a class="post-name" href="{{ url_for('perfil_publico', aluno_id=post.aluno.id) }}">{{ autor_nome }}</a>
+                {% else %}
+                  <span class="post-name">{{ autor_nome }}</span>
+                {% endif %}
+                <div class="post-meta">Comunidade Pro Saúde</div>
+              </div>
+
+              <div class="post-time">{{ post.criado_em.strftime('%d/%m %H:%M') }}</div>
+            </div>
+
+            <div class="post-media-wrap">
+              {% if post.tipo == 'foto' %}
+                <img class="post-media" src="{{ url_for('static', filename=post.midia_path) }}" alt="Publicação de {{ autor_nome }}" />
+              {% else %}
+                <video class="post-media" controls playsinline preload="metadata">
+                  <source src="{{ url_for('static', filename=post.midia_path) }}" />
+                  Seu navegador não suporta vídeo.
+                </video>
+              {% endif %}
+            </div>
+
+            <div class="post-footer">
+              {% if post.legenda %}
+                <div class="post-caption">{{ post.legenda }}</div>
+              {% endif %}
+
+              <div class="post-actions">
+                <form class="like-form" action="{{ url_for('curtir_post', post_id=post.id) }}" method="post">
+                  <input type="hidden" name="next" value="/feed" />
+                  <button type="submit" class="like-btn {% if ja_curtiu %}is-liked{% endif %}">
+                    <i class="fa-{{ 'solid' if ja_curtiu else 'regular' }} fa-heart"></i>
+                    <span>{{ post.curtidas|length }} curtidas</span>
+                  </button>
+                </form>
+
+                <span class="post-tag">{{ 'Vídeo' if post.tipo == 'video' else 'Foto' }}</span>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    {% else %}
+      <section class="empty-feed">
+        <h2 class="mb-2 text-xl font-black text-white">Seu feed ainda está vazio</h2>
+        <p>Abra o botão de publicar e coloque a primeira foto ou vídeo do treino.</p>
+      </section>
+    {% endif %}
+  </main>
+
+  <div id="filterBackdrop" class="sheet-backdrop" aria-hidden="true">
+    <section class="filter-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Filtrar feed</div>
+      <div class="filter-grid">
+        <button type="button" class="filter-option is-active" data-filter="all">Tudo</button>
+        <button type="button" class="filter-option" data-filter="foto">Só fotos</button>
+        <button type="button" class="filter-option" data-filter="video">Só vídeos</button>
+        <button type="button" class="filter-option" data-filter="me">Meus posts</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="composerBackdrop" class="sheet-backdrop" aria-hidden="true">
+    <section class="composer-sheet filter-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Nova publicação</div>
+      <form class="composer-form" action="{{ url_for('postar') }}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="next" value="/feed" />
+        <input type="file" name="midia" accept="image/*,video/*" required />
+        <textarea name="legenda" maxlength="200" placeholder="Escreva uma legenda para o seu treino"></textarea>
+        <button class="submit-post" type="submit">Publicar no feed</button>
+      </form>
+    </section>
+  </div>
+
+  {% include "_mobile_nav.html" %}
+
+  <script>
+    const searchInput = document.getElementById('feedSearch');
+    const posts = Array.from(document.querySelectorAll('[data-post-type]'));
+    const filterCount = document.getElementById('filterCount');
+    const filterBackdrop = document.getElementById('filterBackdrop');
+    const composerBackdrop = document.getElementById('composerBackdrop');
+    const filterButtons = Array.from(document.querySelectorAll('.filter-option'));
+    const composerOpeners = [document.getElementById('openComposer'), document.getElementById('openComposerInline')].filter(Boolean);
+    let activeFilter = 'all';
+
+    function updateFilterBadge() {
+      filterCount.textContent = activeFilter === 'all' ? '1' : '2';
+    }
+
+    function renderFeed() {
+      const query = (searchInput.value || '').trim().toLowerCase();
+
+      posts.forEach((post) => {
+        const type = post.dataset.postType;
+        const owner = post.dataset.postOwner;
+        const text = post.dataset.search;
+
+        const matchSearch = !query || text.includes(query);
+        const matchFilter =
+          activeFilter === 'all' ||
+          (activeFilter === 'foto' && type === 'foto') ||
+          (activeFilter === 'video' && type === 'video') ||
+          (activeFilter === 'me' && owner === 'me');
+
+        post.style.display = matchSearch && matchFilter ? '' : 'none';
+      });
+    }
+
+    function openSheet(backdrop) {
+      backdrop.classList.add('is-open');
+      backdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeSheet(backdrop) {
+      backdrop.classList.remove('is-open');
+      backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    document.getElementById('openFilters').addEventListener('click', () => openSheet(filterBackdrop));
+    composerOpeners.forEach((button) => button.addEventListener('click', () => openSheet(composerBackdrop)));
+
+    filterBackdrop.addEventListener('click', (event) => {
+      if (event.target === filterBackdrop) closeSheet(filterBackdrop);
+    });
+
+    composerBackdrop.addEventListener('click', (event) => {
+      if (event.target === composerBackdrop) closeSheet(composerBackdrop);
+    });
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeFilter = button.dataset.filter;
+        filterButtons.forEach((item) => item.classList.toggle('is-active', item === button));
+        updateFilterBadge();
+        renderFeed();
+        closeSheet(filterBackdrop);
+      });
+    });
+
+    searchInput.addEventListener('input', renderFeed);
+    updateFilterBadge();
+    renderFeed();
+  </script>
+
+</body>
+</html>

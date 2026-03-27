@@ -1,0 +1,72 @@
+{% extends "index.html" %}
+{% block content %}
+<section class="glass-card mb-8 rounded-3xl p-5 md:p-6">
+  <div class="flex items-center gap-4 mb-4">
+    {% if aluno.foto_path %}
+      <img src="{{ url_for('servir_foto', filename=aluno.foto_path.split('/')[-1]) }}" alt="Foto do aluno" class="profile-photo" style="width:90px;height:90px;">
+    {% else %}
+      <div class="photo-placeholder" style="width:90px;height:90px;font-size:2.5rem;">👤</div>
+    {% endif %}
+    <div>
+      <h2 class="text-2xl font-bold text-white">{{ aluno.nome }}</h2>
+      <p class="text-sm text-slate-300">{{ aluno.email }}</p>
+      <div class="flex gap-2 mt-2">
+        <span class="text-xs text-green-400">{{ seguidores_count }} seguidores</span>
+        <span class="text-xs text-blue-300">{{ seguindo_count }} seguindo</span>
+      </div>
+      {% if user.id != aluno.id %}
+        <form method="post" action="{{ url_for('seguir_aluno', aluno_id=aluno.id) }}" style="display:inline;">
+          {% if seguindo %}
+            <button class="btn-orange rounded px-3 py-1 text-xs font-bold" type="submit">Deixar de seguir</button>
+          {% else %}
+            <button class="btn-secondary rounded px-3 py-1 text-xs font-bold" type="submit">Seguir</button>
+          {% endif %}
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="grid grid-cols-3 gap-2 mb-4">
+    <div class="text-center">
+      <div class="text-lg font-bold text-white">{{ total_checkins }}</div>
+      <div class="text-xs text-slate-300">Check-ins</div>
+    </div>
+    <div class="text-center">
+      <div class="text-lg font-bold text-white">{{ total_presencas }}</div>
+      <div class="text-xs text-slate-300">Presenças</div>
+    </div>
+    <div class="text-center">
+      <div class="text-lg font-bold text-white">{{ total_pontos }}</div>
+      <div class="text-xs text-slate-300">Pontos</div>
+    </div>
+  </div>
+</section>
+
+<section class="glass-card rounded-3xl p-5 md:p-6 mb-8">
+  <h3 class="mb-4 text-xl font-bold text-white">Posts recentes</h3>
+  {% if posts %}
+    <div class="grid gap-4">
+      {% for post in posts %}
+        <article class="rounded-xl bg-black/30 p-3 flex flex-col gap-2">
+          {% if post.tipo == 'foto' %}
+            <img src="{{ url_for('static', filename=post.midia_path) }}" alt="Post de treino" class="rounded-lg max-h-64 object-cover mx-auto">
+          {% elif post.tipo == 'video' %}
+            <video controls class="rounded-lg max-h-64 mx-auto">
+              <source src="{{ url_for('static', filename=post.midia_path) }}">
+              Seu navegador não suporta vídeo.
+            </video>
+          {% endif %}
+          {% if post.legenda %}
+            <p class="text-sm text-slate-200">{{ post.legenda }}</p>
+          {% endif %}
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-slate-400">{{ post.criado_em.strftime('%d/%m/%Y %H:%M') }}</span>
+            <span class="ml-auto text-xs text-pink-400">{{ post.curtidas|length }} curtidas</span>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-slate-300 text-sm">Nenhum post ainda.</p>
+  {% endif %}
+</section>
+{% endblock %}

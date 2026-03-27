@@ -1,0 +1,212 @@
+.bottom-nav {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 60;
+  background: rgba(10, 12, 16, 0.38) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+  padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom)) !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  min-width: 0;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem !important;
+  text-decoration: none;
+  color: #9aa3ad;
+  padding: 0.55rem 0.1rem 0.35rem !important;
+}
+
+.bottom-nav-item i {
+  font-size: 2.15rem !important;
+  color: inherit;
+}
+
+.bottom-nav-item span {
+  font-size: 0.86rem !important;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.bottom-nav-item.active {
+  color: #23d66f !important;
+}
+
+.bottom-nav-item.active span {
+  font-weight: 700;
+}
+
+.bottom-nav-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+}
+
+.menu-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s;
+}
+
+.menu-sheet-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.menu-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 91;
+  max-width: 480px;
+  margin: 0 auto;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.32, .72, 0, 1);
+}
+
+.menu-sheet.is-open {
+  transform: translateY(0%);
+}
+
+.menu-sheet-card {
+  background: rgba(8, 11, 17, 0.94);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  border-radius: 2rem 2rem 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+  padding: 0 0 calc(1.6rem + env(safe-area-inset-bottom));
+}
+
+.menu-sheet-handle {
+  width: 3rem;
+  height: 0.28rem;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 99px;
+  margin: 0.8rem auto 0;
+}
+
+.menu-sheet-title {
+  padding: 1.2rem 1.5rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.menu-sheet-link,
+.menu-sheet-disabled,
+.menu-sheet-close {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.menu-sheet-link {
+  text-decoration: none;
+  color: #f1f5f9;
+}
+
+.menu-sheet-disabled {
+  color: rgba(255, 255, 255, 0.32);
+  cursor: default;
+}
+
+.menu-sheet-close {
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(255, 100, 100, 0.75);
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-sheet-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  border-radius: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-sheet-icon--perfil {
+  background: rgba(29, 222, 142, 0.12);
+}
+
+.menu-sheet-icon--perfil i {
+  color: #1dde8e;
+}
+
+.menu-sheet-icon--competicoes {
+  background: rgba(245, 197, 66, 0.08);
+}
+
+.menu-sheet-icon--competicoes i {
+  color: rgba(245, 197, 66, 0.4);
+}
+
+.menu-sheet-icon--treinos {
+  background: rgba(100, 180, 255, 0.08);
+}
+
+.menu-sheet-icon--treinos i {
+  color: rgba(100, 180, 255, 0.4);
+}
+
+.menu-sheet-icon--close {
+  background: rgba(255, 80, 80, 0.08);
+}
+
+.menu-sheet-icon--close i {
+  color: rgba(255, 80, 80, 0.6);
+}
+
+.menu-sheet-badge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 99px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+}
+
+.menu-sheet-badge--competicoes {
+  background: rgba(245, 197, 66, 0.14);
+  color: #f5c542;
+}
+
+.menu-sheet-badge--treinos {
+  background: rgba(100, 180, 255, 0.14);
+  color: #7ec8ff;
+}
+
+.menu-sheet-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 0.3rem 1.5rem 0;
+}

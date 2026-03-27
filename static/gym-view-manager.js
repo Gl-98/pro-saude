@@ -143,7 +143,7 @@
         <h3 class="gym-title">Gym indisponível no momento</h3>
         <p class="gym-subtitle">Faça check-in em uma modalidade para liberar esta área.</p>
         <div class="gym-empty">
-          Nenhum check-in ativo encontrado. Acesse o Feed e confirme presença para abrir sua Área de Atividade.
+          Nenhum check-in ativo encontrado. Acesse a Rede Social e confirme presença para abrir sua Área de Atividade.
         </div>
       </article>
     `;

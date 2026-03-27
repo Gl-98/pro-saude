@@ -1,17 +1,19 @@
-from __future__ import annotations
 
-import os
-import importlib
-import smtplib
-import threading
-import string
-import random
+
+
+from __future__ import annotations
 import json
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import os
+import random
+import smtplib
+import string
+import threading
 from datetime import date, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from functools import wraps
 
+from dotenv import load_dotenv
 from flask import (
     Flask,
     flash,
@@ -24,67 +26,51 @@ from flask import (
     url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import UniqueConstraint, case, func, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
-dotenv_spec = importlib.util.find_spec("dotenv")
-if dotenv_spec:
-    dotenv_module = importlib.import_module("dotenv")
-    dotenv_module.load_dotenv(override=True)
+load_dotenv()
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "app.db")
+# ── Constantes ────────────────────────────────────────────────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads", "fotos")
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
-
-# Criar diretório de uploads se não existir
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+MODALIDADES_VALIDAS = {"funcional", "natacao", "natação", "volei", "vôlei"}
 
-def resolve_database_uri() -> str:
-    """Resolve a URI do banco para produção/local com fallback seguro."""
-    database_url = os.getenv("DATABASE_URL", "").strip()
-    if database_url:
-        # Render pode fornecer URL legada com postgres://
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-        return database_url
-    return f"sqlite:///{DB_PATH}"
-
+# ── App Flask ─────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_uri()
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "troque-esta-chave-em-producao")
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.getenv("RENDER", "") != ""
+
+# Render usa postgres:// mas SQLAlchemy 2.x exige postgresql://
+if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgres://"):
+    app.config["SQLALCHEMY_DATABASE_URI"] = app.config["SQLALCHEMY_DATABASE_URI"].replace(
+        "postgres://", "postgresql://", 1
+    )
 
 db = SQLAlchemy(app)
 
 
-@app.after_request
-def disable_cache(response):
-    """Evita cache agressivo durante desenvolvimento para refletir mudanças de UI imediatamente."""
-    path = request.path.lower()
-    is_html = (response.mimetype or "").startswith("text/html")
-    is_static_asset = path.endswith(".js") or path.endswith(".css")
-
-    if is_html or is_static_asset:
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-
-    return response
-
-MODALIDADES_VALIDAS = {"Volei", "Natacao", "Funcional"}
+# ── Models ────────────────────────────────────────────────────────────
+class Aluno(db.Model):
+    __tablename__ = "alunos"
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    senha_hash = db.Column(db.String(255), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    aprovado = db.Column(db.Boolean, nullable=False, default=False)
+    foto_path = db.Column(db.String(255))
 
 
 class Aula(db.Model):
     __tablename__ = "aulas"
-
     id = db.Column(db.Integer, primary_key=True)
     modalidade = db.Column(db.String(30), nullable=False)
     data = db.Column(db.Date, nullable=False)
@@ -93,92 +79,117 @@ class Aula(db.Model):
     plano_aula = db.Column(db.Text, nullable=False)
     equipamentos_necessarios = db.Column(db.Text, nullable=False)
 
-    checkins = db.relationship("Checkin", back_populates="aula", cascade="all, delete-orphan")
-
-
-class Aluno(db.Model):
-    __tablename__ = "alunos"
-
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    senha_hash = db.Column(db.String(255), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    aprovado = db.Column(db.Boolean, default=False, nullable=False)
-    foto_path = db.Column(db.String(255), nullable=True)
-
-    checkins = db.relationship("Checkin", back_populates="aluno", cascade="all, delete-orphan")
-
 
 class Checkin(db.Model):
     __tablename__ = "checkins"
-    __table_args__ = (UniqueConstraint("aluno_id", "aula_id", name="uq_checkin_aluno_aula"),)
-
     id = db.Column(db.Integer, primary_key=True)
     aluno_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
     aula_id = db.Column(db.Integer, db.ForeignKey("aulas.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    compareceu = db.Column(db.Boolean, nullable=True)
-    pontos_recebidos = db.Column(db.Integer, default=0, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    compareceu = db.Column(db.Boolean)
+    pontos_recebidos = db.Column(db.Integer, nullable=False, default=0)
 
-    aluno = db.relationship("Aluno", back_populates="checkins")
-    aula = db.relationship("Aula", back_populates="checkins")
-
-
-class RequisicaoResetSenha(db.Model):
-    __tablename__ = "requisicoes_reset_senha"
-
-    id = db.Column(db.Integer, primary_key=True)
-    aluno_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
-    email_solicitante = db.Column(db.String(120), nullable=False)
-    status = db.Column(db.String(20), default="pendente", nullable=False)  # pendente, aprovado, rejeitado
-    criada_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    nova_senha = db.Column(db.String(255), nullable=True)
-
-    aluno = db.relationship("Aluno")
+    __table_args__ = (db.UniqueConstraint("aluno_id", "aula_id"),)
 
 
 class RankingEvento(db.Model):
     __tablename__ = "ranking_eventos"
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
     modalidade = db.Column(db.String(30), nullable=False)
-    pontos_ganhos = db.Column(db.Integer, nullable=False)
+    pontos_ganhos = db.Column(db.Integer, nullable=False, default=0)
     data_hora = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     origem = db.Column(db.String(30), nullable=False, default="gym")
-    request_id = db.Column(db.String(80), nullable=True)
-    detalhes = db.Column(db.Text, nullable=True)
-
-    aluno = db.relationship("Aluno")
+    request_id = db.Column(db.String(80))
+    detalhes = db.Column(db.Text)
 
 
 class Desafio(db.Model):
     __tablename__ = "desafios"
-
     id = db.Column(db.Integer, primary_key=True)
     criador_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
-    oponente_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=True)
+    oponente_id = db.Column(db.Integer, db.ForeignKey("alunos.id"))
     titulo = db.Column(db.String(120), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
-    tipo = db.Column(db.String(30), nullable=False)  # tempo, repeticoes, distancia, livre
+    tipo = db.Column(db.String(30), nullable=False)
     meta = db.Column(db.String(120), nullable=False)
-    status = db.Column(db.String(20), default="aberto", nullable=False)  # aberto, aceito, concluido, cancelado
-    resultado_criador = db.Column(db.String(200), nullable=True)
-    resultado_oponente = db.Column(db.String(200), nullable=True)
-    vencedor_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=True)
-    criado_em = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="aberto")
+    resultado_criador = db.Column(db.String(120))
+    resultado_oponente = db.Column(db.String(120))
+    vencedor_id = db.Column(db.Integer, db.ForeignKey("alunos.id"))
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     criador = db.relationship("Aluno", foreign_keys=[criador_id])
     oponente = db.relationship("Aluno", foreign_keys=[oponente_id])
     vencedor = db.relationship("Aluno", foreign_keys=[vencedor_id])
 
 
+class RequisicaoResetSenha(db.Model):
+    __tablename__ = "requisicoes_reset_senha"
+    id = db.Column(db.Integer, primary_key=True)
+    aluno_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    email_solicitante = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="pendente")
+    nova_senha = db.Column(db.String(120))
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    aluno = db.relationship("Aluno")
+
+
+class Seguidor(db.Model):
+    __tablename__ = "seguidores"
+    id = db.Column(db.Integer, primary_key=True)
+    seguidor_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    seguido_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+class Post(db.Model):
+    __tablename__ = "posts"
+    id = db.Column(db.Integer, primary_key=True)
+    aluno_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)
+    midia_path = db.Column(db.String(255), nullable=False)
+    legenda = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    aluno = db.relationship("Aluno", backref="posts")
+    curtidas = db.relationship("Curtida", backref="post", lazy="select")
+
+
+class Curtida(db.Model):
+    __tablename__ = "curtidas"
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
+    aluno_id = db.Column(db.Integer, db.ForeignKey("alunos.id"), nullable=False)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+# ── Context Processor ─────────────────────────────────────────────────
+@app.context_processor
+def inject_models():
+    return dict(Post=Post)
+
+
+POST_UPLOADS_DIR = os.path.join(BASE_DIR, "static", "uploads", "posts")
+os.makedirs(POST_UPLOADS_DIR, exist_ok=True)
+
+ALLOWED_POST_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif", "mp4", "mov", "webm"}
+
+
+# ── Helpers ───────────────────────────────────────────────────────────
 def current_user() -> Aluno | None:
     user_id = session.get("user_id")
     if not user_id:
         return None
     return Aluno.query.get(user_id)
+
+
+def redirect_back(default_endpoint: str = "index"):
+    next_url = (request.form.get("next") or request.args.get("next") or request.referrer or "").strip()
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+    return redirect(url_for(default_endpoint))
 
 
 def login_required(view):
@@ -738,7 +749,11 @@ def enviar_confirmacao_checkin(nome: str, email_aluno: str, modalidade: str, dat
 
 def bootstrap_database() -> None:
     db.create_all()
-    migrate_database()
+    # Só rodar migrate_database se as tabelas já existirem
+    try:
+        migrate_database()
+    except Exception:
+        pass
     seed_admin_user()
 
 
@@ -756,6 +771,135 @@ def index():
     limpar_aulas_passadas()
     user = current_user()
     return render_template("index.html", user=user)
+
+
+@app.route("/feed", methods=["GET"])
+@login_required
+def feed():
+    user = current_user()
+    posts = Post.query.order_by(Post.criado_em.desc()).limit(40).all()
+
+    story_users = (
+        Aluno.query.filter(Aluno.aprovado.is_(True), Aluno.is_admin.is_(False))
+        .order_by(Aluno.nome.asc())
+        .limit(12)
+        .all()
+    )
+
+    return render_template(
+        "feed.html",
+        user=user,
+        posts=posts,
+        story_users=story_users,
+    )
+
+
+@app.route("/postar", methods=["POST"])
+@login_required
+def postar():
+    user = current_user()
+    if "midia" not in request.files:
+        flash("Nenhum arquivo foi enviado.", "error")
+        return redirect_back("feed")
+
+    file = request.files["midia"]
+    if file.filename == "":
+        flash("Nenhum arquivo foi selecionado.", "error")
+        return redirect_back("feed")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_POST_EXTENSIONS:
+        flash("Tipo de arquivo não permitido.", "error")
+        return redirect_back("feed")
+
+    tipo = "video" if ext in {"mp4", "mov", "webm"} else "foto"
+    filename = secure_filename(f"post_{user.id}_{datetime.now().timestamp()}.{ext}")
+    filepath = os.path.join(POST_UPLOADS_DIR, filename)
+    file.save(filepath)
+
+    midia_path = f"uploads/posts/{filename}"
+    legenda = request.form.get("legenda", "").strip()[:200]
+
+    post = Post(aluno_id=user.id, tipo=tipo, midia_path=midia_path, legenda=legenda or None)
+    db.session.add(post)
+    db.session.commit()
+
+    flash("Post publicado!", "success")
+    return redirect_back("feed")
+
+
+@app.route("/curtir/<int:post_id>", methods=["POST"])
+@login_required
+def curtir_post(post_id: int):
+    user = current_user()
+    post = Post.query.get_or_404(post_id)
+
+    curtida_existente = Curtida.query.filter_by(post_id=post.id, aluno_id=user.id).first()
+    if curtida_existente:
+        db.session.delete(curtida_existente)
+        db.session.commit()
+    else:
+        curtida = Curtida(post_id=post.id, aluno_id=user.id)
+        db.session.add(curtida)
+        db.session.commit()
+
+    return redirect_back("feed")
+
+
+@app.route("/perfil/<int:aluno_id>", methods=["GET"])
+@login_required
+def perfil_publico(aluno_id: int):
+    user = current_user()
+    aluno = Aluno.query.get_or_404(aluno_id)
+
+    seguidores_count = Seguidor.query.filter_by(seguido_id=aluno.id).count()
+    seguindo_count = Seguidor.query.filter_by(seguidor_id=aluno.id).count()
+    seguindo = Seguidor.query.filter_by(seguidor_id=user.id, seguido_id=aluno.id).first() is not None
+
+    total_checkins = Checkin.query.filter_by(aluno_id=aluno.id).count()
+    total_presencas = Checkin.query.filter_by(aluno_id=aluno.id, compareceu=True).count()
+
+    pontos_checkins = db.session.query(func.coalesce(func.sum(Checkin.pontos_recebidos), 0)).filter_by(aluno_id=aluno.id).scalar()
+    pontos_extras = db.session.query(func.coalesce(func.sum(RankingEvento.pontos_ganhos), 0)).filter_by(user_id=aluno.id).scalar()
+    total_pontos = int(pontos_checkins or 0) + int(pontos_extras or 0)
+
+    posts = Post.query.filter_by(aluno_id=aluno.id).order_by(Post.criado_em.desc()).all()
+
+    return render_template(
+        "perfil_publico.html",
+        user=user,
+        aluno=aluno,
+        seguidores_count=seguidores_count,
+        seguindo_count=seguindo_count,
+        seguindo=seguindo,
+        total_checkins=total_checkins,
+        total_presencas=total_presencas,
+        total_pontos=total_pontos,
+        posts=posts,
+    )
+
+
+@app.route("/seguir/<int:aluno_id>", methods=["POST"])
+@login_required
+def seguir_aluno(aluno_id: int):
+    user = current_user()
+    if user.id == aluno_id:
+        flash("Você não pode seguir a si mesmo.", "error")
+        return redirect(url_for("perfil_publico", aluno_id=aluno_id))
+
+    aluno = Aluno.query.get_or_404(aluno_id)
+    existente = Seguidor.query.filter_by(seguidor_id=user.id, seguido_id=aluno.id).first()
+    if existente:
+        db.session.delete(existente)
+        db.session.commit()
+        flash(f"Você deixou de seguir {aluno.nome}.", "success")
+    else:
+        seguir = Seguidor(seguidor_id=user.id, seguido_id=aluno.id)
+        db.session.add(seguir)
+        db.session.commit()
+        flash(f"Você agora segue {aluno.nome}!", "success")
+
+    return redirect(url_for("perfil_publico", aluno_id=aluno_id))
 
 
 @app.route("/ranking", methods=["GET"])
@@ -1362,7 +1506,8 @@ def admin():
     guard = current_user()
 
     if request.method == "POST":
-        modalidade = request.form.get("modalidade", "").strip()
+        modalidade_raw = request.form.get("modalidade", "")
+        modalidade = normalizar_modalidade(modalidade_raw)
         data_raw = request.form.get("data", "")
         horario_raw = request.form.get("horario", "")
         vagas_totais = request.form.get("vagas_totais", "0")

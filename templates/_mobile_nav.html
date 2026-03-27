@@ -1,0 +1,74 @@
+<nav class="bottom-nav {% if request.endpoint == 'index' and not user %}{% else %}is-visible{% endif %}" aria-label="Navegacao inferior">
+  <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-house"></i>
+    <span>Gym</span>
+  </a>
+  <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-trophy"></i>
+    <span>Ranking</span>
+  </a>
+  <a class="bottom-nav-item {% if request.endpoint == 'feed' %}active{% endif %}" href="{{ url_for('feed') }}" {% if request.endpoint == 'feed' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-camera"></i>
+    <span>Feed</span>
+  </a>
+  <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
+    <i class="fa-solid fa-mouse"></i>
+    <span>Rats</span>
+  </a>
+  <button class="bottom-nav-item bottom-nav-menu-btn" onclick="toggleMenuSheet()" type="button">
+    <i class="fa-solid fa-bars"></i>
+    <span>Menu</span>
+  </button>
+</nav>
+
+<div id="menuSheetOverlay" class="menu-sheet-overlay" onclick="closeMenuSheet()"></div>
+<div id="menuSheet" class="menu-sheet">
+  <div class="menu-sheet-card">
+    <div class="menu-sheet-handle"></div>
+    <p class="menu-sheet-title">Menu</p>
+    {% if user %}
+      <a href="{{ url_for('perfil') }}" onclick="closeMenuSheet()" class="menu-sheet-link">
+        <span class="menu-sheet-icon menu-sheet-icon--perfil"><i class="fa-solid fa-user"></i></span>
+        Perfil
+      </a>
+    {% endif %}
+    <div class="menu-sheet-disabled">
+      <span class="menu-sheet-icon menu-sheet-icon--competicoes"><i class="fa-solid fa-trophy"></i></span>
+      Competi&ccedil;&otilde;es
+      <span class="menu-sheet-badge menu-sheet-badge--competicoes">Em breve</span>
+    </div>
+    <div class="menu-sheet-disabled">
+      <span class="menu-sheet-icon menu-sheet-icon--treinos"><i class="fa-solid fa-dumbbell"></i></span>
+      Treinos
+      <span class="menu-sheet-badge menu-sheet-badge--treinos">Em breve</span>
+    </div>
+    <div class="menu-sheet-divider"></div>
+    <button class="menu-sheet-close" onclick="closeMenuSheet()" type="button">
+      <span class="menu-sheet-icon menu-sheet-icon--close"><i class="fa-solid fa-xmark"></i></span>
+      Fechar
+    </button>
+  </div>
+</div>
+
+<script>
+  function toggleMenuSheet() {
+    var menu = document.getElementById('menuSheet');
+    var overlay = document.getElementById('menuSheetOverlay');
+    var open = menu.classList.contains('is-open');
+    if (open) {
+      closeMenuSheet();
+      return;
+    }
+    menu.classList.add('is-open');
+    overlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMenuSheet() {
+    var menu = document.getElementById('menuSheet');
+    var overlay = document.getElementById('menuSheetOverlay');
+    menu.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+</script>

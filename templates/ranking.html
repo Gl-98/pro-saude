@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='ranking.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile-nav.css') }}" />
   <style>
     .bottom-nav {
       display: flex;
@@ -18,45 +19,47 @@
       left: 0;
       width: 100%;
       z-index: 60;
-      background: #111315;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(10, 12, 16, 0.38);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
       padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
-        gap: 0.45rem;
+      align-items: center;
       justify-content: space-around;
     }
-        padding: 0.55rem 0.1rem 0.35rem;
+
     .bottom-nav-item {
       flex: 1;
       min-width: 0;
-        font-size: 2.15rem;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.2rem;
-        font-size: 0.86rem;
-        font-weight: 500;
-      padding: 0.3rem 0.1rem;
+      gap: 0.45rem;
+      text-decoration: none;
+      color: #9aa3ad;
+      padding: 0.55rem 0.1rem 0.35rem;
     }
 
     .bottom-nav-item i {
-      font-size: 1.08rem;
+      font-size: 2.15rem;
       color: inherit;
     }
 
-      .bottom-nav-item.active span {
-        font-weight: 700;
-      }
-
     .bottom-nav-item span {
-        <i class="fa-solid fa-house"></i>
-      font-weight: 600;
+      font-size: 0.86rem;
+      font-weight: 500;
       color: inherit;
       white-space: nowrap;
-        <i class="fa-solid fa-trophy"></i>
+    }
 
     .bottom-nav-item.active {
       color: #23d66f;
-        <i class="fa-solid fa-camera"></i>
+    }
+
+    .bottom-nav-item.active span {
+      font-weight: 700;
+    }
   </style>
 </head>
 <body class="min-h-screen text-[color:var(--text-light)]">
@@ -184,27 +187,6 @@
     </section>
   <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div></main>
 
-  <nav class="bottom-nav" aria-label="Navegacao inferior">
-    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-house"></i>
-      <span>Gym</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-trophy"></i>
-      <span>Ranking</span>
-    </a>
-    <a class="bottom-nav-item" href="{{ url_for('index') }}#feedAulas">
-      <i class="fa-solid fa-camera"></i>
-      <span>Feed</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-mouse"></i>
-      <span>Rats</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'admin' %}active{% endif %}" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-bars"></i>
-      <span>Menu</span>
-    </a>
-  </nav>
+  {% include "_mobile_nav.html" %}
 </body>
 </html>

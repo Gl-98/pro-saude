@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='gym.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile-nav.css') }}" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{{ url_for('static', filename='gym-view-manager.js') }}" defer></script>
   <style>
@@ -132,8 +133,10 @@
       left: 0;
       width: 100%;
       z-index: 60;
-      background: #111315;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(10, 12, 16, 0.38);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
       padding: 0.45rem 0.2rem calc(0.45rem + env(safe-area-inset-bottom));
       align-items: center;
       justify-content: space-around;
@@ -286,12 +289,16 @@
         </div>
       </section>
 
-      <section>
-        <h2 class="brand-title mb-4 text-2xl font-bold text-white sm:text-3xl">Feed de horarios</h2>
-        <div id="feedAulas" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <article class="glass-card rounded-3xl p-4">
-            <p class="text-sm text-slate-100">Carregando aulas...</p>
-          </article>
+      <section class="glass-card mb-8 rounded-3xl p-5 md:p-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 class="brand-title text-2xl font-bold text-white sm:text-3xl">Feed da comunidade</h2>
+            <p class="mt-2 text-sm text-slate-200">A área social agora fica em uma aba própria, com foco total em posts, vídeos e interação.</p>
+          </div>
+          <a href="{{ url_for('feed') }}" class="register-btn inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold text-white shadow">
+            <i class="fa-solid fa-camera mr-2"></i>
+            Abrir Feed
+          </a>
         </div>
       </section>
 
@@ -299,6 +306,12 @@
         <h2 class="brand-title mb-4 text-2xl font-bold text-white sm:text-3xl">Gym</h2>
         <p class="mb-4 text-sm text-slate-200">A área Gym muda conforme sua modalidade de check-in.</p>
         <div id="gymViewRoot" data-user-id="{{ user.id }}" class="gym-view-root"></div>
+      </section>
+
+      <section class="glass-card mb-8 rounded-3xl p-5 md:p-6">
+        <h2 class="brand-title mb-4 text-2xl font-bold text-white sm:text-3xl">Aulas disponíveis para check-in</h2>
+        <p class="mb-4 text-sm text-slate-200">Escolha uma aula para confirmar presença e liberar sua área de atividade no Gym.</p>
+        <div id="feedAulas" class="grid gap-4"></div>
       </section>
 
       <section id="minhaAulaBox" class="glass-card mt-9 hidden rounded-3xl p-6">
@@ -344,13 +357,15 @@
 
       <script>
         function modalidadeBadge(modalidade) {
-          if (modalidade === 'Volei') return { label: 'Volei', chip: 'bg-orange-100 text-orange-700 border-orange-200' };
-          if (modalidade === 'Natacao') return { label: 'Natacao', chip: 'bg-sky-100 text-sky-700 border-sky-200' };
+          const m = String(modalidade || '').trim().toLowerCase();
+          if (m === 'volei' || m === 'vôlei') return { label: 'Volei', chip: 'bg-orange-100 text-orange-700 border-orange-200' };
+          if (m === 'natacao' || m === 'natação') return { label: 'Natacao', chip: 'bg-sky-100 text-sky-700 border-sky-200' };
           return { label: 'Funcional', chip: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
         }
 
         async function carregarAulas() {
           const feed = document.getElementById('feedAulas');
+          if (!feed) return;
           feed.innerHTML = '<article class="glass-card rounded-3xl p-4"><p class="text-sm text-slate-100">Atualizando feed...</p></article>';
 
           let aulas;
@@ -470,27 +485,6 @@
     <script src="{{ url_for('static', filename='splash-screen.js') }}"></script>
   <div style="height: 150px; width: 100%; display: block; clear: both; pointer-events: none;"></div></main>
 
-  <nav class="bottom-nav {% if user %}is-visible{% endif %}" aria-label="Navegacao inferior">
-    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="#gymSection" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-house"></i>
-      <span>Gym</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'ranking' %}active{% endif %}" href="{{ url_for('ranking') }}" {% if request.endpoint == 'ranking' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-trophy"></i>
-      <span>Ranking</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}#feedAulas">
-      <i class="fa-solid fa-camera"></i>
-      <span>Feed</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'rats' %}active{% endif %}" href="{{ url_for('rats') }}" {% if request.endpoint == 'rats' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-mouse"></i>
-      <span>Rats</span>
-    </a>
-    <a class="bottom-nav-item {% if request.endpoint == 'admin' %}active{% endif %}" href="{% if user and user.is_admin %}{{ url_for('admin') }}{% else %}{{ url_for('index') }}{% endif %}" {% if request.endpoint == 'admin' %}aria-current="page"{% endif %}>
-      <i class="fa-solid fa-bars"></i>
-      <span>Menu</span>
-    </a>
-  </nav>
+  {% include "_mobile_nav.html" %}
 </body>
 </html>
