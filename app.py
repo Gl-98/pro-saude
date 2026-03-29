@@ -49,6 +49,15 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Limita o pool para evitar estouro de conexões no Postgres do plano free.
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 1800,
+    "pool_size": 2,
+    "max_overflow": 0,
+    "pool_timeout": 30,
+}
+
 # Render usa postgres:// mas SQLAlchemy 2.x exige postgresql://
 if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgres://"):
     app.config["SQLALCHEMY_DATABASE_URI"] = app.config["SQLALCHEMY_DATABASE_URI"].replace(
