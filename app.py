@@ -182,7 +182,7 @@ def current_user() -> Aluno | None:
     user_id = session.get("user_id")
     if not user_id:
         return None
-    return Aluno.query.get(user_id)
+    return db.session.get(Aluno, user_id)
 
 
 def redirect_back(default_endpoint: str = "index"):
