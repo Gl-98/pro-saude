@@ -26,8 +26,9 @@ from flask import (
     url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -338,19 +339,15 @@ def limpar_aulas_passadas() -> None:
     """Deleta automaticamente as aulas que já passaram (data < hoje)."""
     try:
         hoje = date.today()
-        aulas_passadas = Aula.query.filter(Aula.data < hoje).all()
-        
-        for aula in aulas_passadas:
-            # Deletar check-ins associados (cascade vai fazer isso, mas deixamos explícito)
-            Checkin.query.filter_by(aula_id=aula.id).delete()
-            # Deletar a aula
-            db.session.delete(aula)
-        
-        if aulas_passadas:
+        aulas_ids = db.session.execute(
+            select(Aula.id).where(Aula.data < hoje)
+        ).scalars().all()
+        if aulas_ids:
+            db.session.execute(delete(Checkin).where(Checkin.aula_id.in_(aulas_ids)))
+            db.session.execute(delete(Aula).where(Aula.id.in_(aulas_ids)))
             db.session.commit()
     except Exception:
         db.session.rollback()
-        pass
 
 
 def allowed_file(filename: str) -> bool:
@@ -1590,7 +1587,11 @@ def admin():
         )
 
     pendentes = Aluno.query.filter_by(aprovado=False, is_admin=False).order_by(Aluno.id.asc()).all()
-    resets_pendentes = RequisicaoResetSenha.query.filter_by(status="pendente").all()
+    resets_pendentes = db.session.scalars(
+        select(RequisicaoResetSenha)
+        .where(RequisicaoResetSenha.status == "pendente")
+        .options(joinedload(RequisicaoResetSenha.aluno))
+    ).all()
     alunos_aprovados = Aluno.query.filter_by(aprovado=True, is_admin=False).order_by(Aluno.nome.asc()).all()
 
     stats = {
