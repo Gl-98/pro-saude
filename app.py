@@ -260,38 +260,54 @@ def seed_admin_user() -> None:
 
 def migrate_database() -> None:
     """Adiciona colunas novas sem recriar o banco."""
-    if db.engine.dialect.name != "sqlite":
-        # PRAGMA é específico do SQLite; em Postgres o schema é criado por create_all.
-        return
+    dialect = db.engine.dialect.name
 
     with db.engine.connect() as conn:
-        result = conn.execute(db.text("PRAGMA table_info(alunos)"))
-        columns = [row[1] for row in result.fetchall()]
-        if "aprovado" not in columns:
-            conn.execute(db.text("ALTER TABLE alunos ADD COLUMN aprovado BOOLEAN NOT NULL DEFAULT 0"))
-            conn.execute(db.text("UPDATE alunos SET aprovado = 1 WHERE is_admin = 1"))
-        if "foto_path" not in columns:
-            conn.execute(db.text("ALTER TABLE alunos ADD COLUMN foto_path VARCHAR(255)"))
+        if dialect == "sqlite":
+            result = conn.execute(db.text("PRAGMA table_info(alunos)"))
+            columns = [row[1] for row in result.fetchall()]
+            if "aprovado" not in columns:
+                conn.execute(db.text("ALTER TABLE alunos ADD COLUMN aprovado BOOLEAN NOT NULL DEFAULT 0"))
+                conn.execute(db.text("UPDATE alunos SET aprovado = 1 WHERE is_admin = 1"))
+            if "foto_path" not in columns:
+                conn.execute(db.text("ALTER TABLE alunos ADD COLUMN foto_path VARCHAR(255)"))
 
-        checkin_result = conn.execute(db.text("PRAGMA table_info(checkins)"))
-        checkin_columns = [row[1] for row in checkin_result.fetchall()]
-        if "compareceu" not in checkin_columns:
-            conn.execute(db.text("ALTER TABLE checkins ADD COLUMN compareceu BOOLEAN"))
-        if "pontos_recebidos" not in checkin_columns:
-            conn.execute(db.text("ALTER TABLE checkins ADD COLUMN pontos_recebidos INTEGER NOT NULL DEFAULT 0"))
+            checkin_result = conn.execute(db.text("PRAGMA table_info(checkins)"))
+            checkin_columns = [row[1] for row in checkin_result.fetchall()]
+            if "compareceu" not in checkin_columns:
+                conn.execute(db.text("ALTER TABLE checkins ADD COLUMN compareceu BOOLEAN"))
+            if "pontos_recebidos" not in checkin_columns:
+                conn.execute(db.text("ALTER TABLE checkins ADD COLUMN pontos_recebidos INTEGER NOT NULL DEFAULT 0"))
 
-        ranking_result = conn.execute(db.text("PRAGMA table_info(ranking_eventos)"))
-        ranking_columns = [row[1] for row in ranking_result.fetchall()]
-        if "request_id" not in ranking_columns:
-            conn.execute(db.text("ALTER TABLE ranking_eventos ADD COLUMN request_id VARCHAR(80)"))
+            ranking_result = conn.execute(db.text("PRAGMA table_info(ranking_eventos)"))
+            ranking_columns = [row[1] for row in ranking_result.fetchall()]
+            if "request_id" not in ranking_columns:
+                conn.execute(db.text("ALTER TABLE ranking_eventos ADD COLUMN request_id VARCHAR(80)"))
 
-        conn.execute(
-            db.text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS uq_ranking_evento_user_request "
-                "ON ranking_eventos(user_id, request_id) "
-                "WHERE request_id IS NOT NULL"
+            conn.execute(
+                db.text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_ranking_evento_user_request "
+                    "ON ranking_eventos(user_id, request_id) "
+                    "WHERE request_id IS NOT NULL"
+                )
             )
-        )
+
+        elif dialect == "postgresql":
+            conn.execute(db.text("ALTER TABLE alunos ADD COLUMN IF NOT EXISTS aprovado BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(db.text("ALTER TABLE alunos ADD COLUMN IF NOT EXISTS foto_path VARCHAR(255)"))
+            conn.execute(db.text("UPDATE alunos SET aprovado = TRUE WHERE is_admin = TRUE"))
+
+            conn.execute(db.text("ALTER TABLE checkins ADD COLUMN IF NOT EXISTS compareceu BOOLEAN"))
+            conn.execute(db.text("ALTER TABLE checkins ADD COLUMN IF NOT EXISTS pontos_recebidos INTEGER NOT NULL DEFAULT 0"))
+
+            conn.execute(db.text("ALTER TABLE ranking_eventos ADD COLUMN IF NOT EXISTS request_id VARCHAR(80)"))
+            conn.execute(
+                db.text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_ranking_evento_user_request "
+                    "ON ranking_eventos(user_id, request_id) "
+                    "WHERE request_id IS NOT NULL"
+                )
+            )
 
         conn.commit()
 
@@ -759,7 +775,7 @@ def bootstrap_database() -> None:
     try:
         migrate_database()
     except Exception:
-        pass
+        app.logger.exception("Falha ao migrar banco de dados")
     seed_admin_user()
 
 
